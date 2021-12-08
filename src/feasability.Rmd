@@ -1,0 +1,73 @@
+```{r tabqi, cache=cacheon}
+
+tab1all <- print(CreateTableOne(
+  vars = qivars,
+  data = rsdata
+),
+smd = FALSE,
+missing = TRUE,
+printToggle = FALSE,
+nonnormal = tabvars,
+catDigits = 1,
+contDigits = 1,
+noSpaces = TRUE,
+explain = FALSE
+)
+tab1all <- as_tibble(cbind(QI = rownames(tab1all), tab1all))
+
+
+tab1func <- function(stratavar) {
+  tab1 <- print(CreateTableOne(
+    vars = qivars,
+    data = rsdata,
+    strata = stratavar,
+    test = FALSE
+  ),
+  smd = FALSE,
+  missing = FALSE,
+  printToggle = FALSE,
+  nonnormal = tabvars,
+  catDigits = 1,
+  contDigits = 1,
+  noSpaces = TRUE,
+  explain = FALSE
+  )
+  tab1 <- as_tibble(cbind(QI = rownames(tab1), tab1))
+}
+
+tab1sex <- tab1func(stratavar = "shf_sex")
+tab1age <- tab1func(stratavar = "shf_age_cat")
+tab1location <- tab1func(stratavar = "shf_ef_cat")
+
+tab1 <- Reduce(
+  function(...) {
+    full_join(...,
+      by = "QI"
+    )
+  },
+  list(tab1all, tab1location, tab1sex, tab1age)
+)
+
+
+tab1 <- tab1 %>%
+  # remove = Yes
+  mutate(across(everything(), str_replace_all, fixed(" = Yes"), "")) %>%
+  mutate(
+    # so no probs
+    QI = sanitize_text(QI)
+  )
+
+
+write.xlsx(tab1, paste0("./output/tabs/tabqi_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+
+colnams <- colnames(tab1)
+colnams <- str_replace(colnams, "Missing", "Not applicaple")
+colnames(tab1) <- sanitize_text(colnams)
+
+default_kable(tab1,
+  font_size = 6,
+  caption = "Quality Indicators",
+  escape = FALSE
+) %>%
+  add_header_above(c(" " = 1, " " = 1, " " = 1, "LVEF" = 2, "Sex" = 2, "Age" = 2))
+```

@@ -1,0 +1,367 @@
+```{r km, cache=cacheon}
+
+kmfunc <- function(qi, time, event, eventcr = NULL, eventname, yposplus = rep(0, 2)) {
+  cexmy <- 1.2
+  endtime <- 6
+  
+  fits <- survfit(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ ", qi)),
+    data = rsdata
+  ) # needed also for cuminc for n at risk
+
+  if (!is.null(eventcr)) {
+    datatmp <- rsdata %>%
+      filter(!is.na(!!sym(qi)))
+    fit <- cuminc(
+      ftime = datatmp %>% pull(!!sym(time)),
+      fstatus = datatmp %>% pull(!!sym(eventcr)),
+      cencode = 0,
+      group = datatmp %>% pull(!!sym(qi))
+    )
+
+    # c(bottom, left, top, right)
+    par(mar = c(8.5, 8.6, 1, 4.25) + 0.1)
+
+    plot(fit[1:2],
+      ylab = eventname,
+      col = global_kicols,
+      wh = c(1110, 1110),
+      xlim = c(0, endtime * 365),
+      ylim = c(0, 1),
+      xlab = "Years",
+      cex.lab = cexmy,
+      axes = F,
+      lwd = 4,
+      lty = c(1, 2),
+      xaxs = "i", yaxs = "i"
+    )
+  } else {
+    # c(bottom, left, top, right)
+    par(mar = c(6.5, 8.6, 1, 4.25) + 0.1)
+    plots <- plot(fits,
+      fun = "event",
+      ylab = eventname,
+      xscale = 365,
+      yscale = 100,
+      col = global_kicols,
+      mark.time = FALSE,
+      bty = "n",
+      xlim = c(0, endtime * 365),
+      ylim = c(0, 1),
+      xlab = "Years",
+      cex.lab = cexmy,
+      axes = F,
+      lwd = 3,
+      lty = c(1, 2),
+      xaxs = "i", yaxs = "i"
+    )
+  }
+
+  axis(2, seq(0, 1, 0.25), seq(0, 100, 25), las = 2, cex.axis = cexmy)
+  axis(1, at = seq(0, endtime, 1) * 365, seq(0, endtime, 1), cex.axis = cexmy)
+
+  if (!is.null(eventcr)) {
+    ypos <- timepoints(fit[1:2], 364 * endtime)$est
+    ypos <- c(max(fit$`No 1`$est), max(fit$`Yes 1`$est))
+  } else {
+    ypos <- 1 - summary(fits, 364 * endtime, extend = T)$surv
+  }
+
+  ylabs <- bind_cols(
+    ypos = c(ypos + yposplus),
+    ytext = levels(rsdata %>% pull(!!sym(qi)))
+  )
+
+  mtext(
+    side = 4,
+    line = .2,
+    at = ylabs$ypos,
+    ylabs$ytext,
+    las = 1,
+    cex = cexmy,
+  )
+
+  mtext("No. at risk", side = 1, line = 3.5, at = -540, adj = 0, cex = cexmy, font = 2)
+  mtext("No", side = 1, line = 4.5, at = -540, adj = 0, cex = cexmy)
+  mtext("Yes", side = 1, line = 5.5, at = -540, adj = 0, cex = cexmy)
+
+  nrisk <- summary(fits, seq(0, endtime, 1) * 365, extend = T)
+
+  axis(1, at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=No")], 
+       line = 3.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000)
+  axis(1, at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=Yes")], 
+       line = 4.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000)
+}
+```
+
+```{r death1, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[1],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh1, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[1],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death2, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[2],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh2, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[2],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death3, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[3],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh3, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[3],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death4, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[4],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh4, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[4],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death5, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[5],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh5, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[5],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death6, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[6],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh6, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[6],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death7, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[7],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh7, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[7],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death8, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[8],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh8, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[8],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death9, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[9],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh9, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[9],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death10, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[10],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh10, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[10],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death11, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[11],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh11, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[11],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death12, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[12],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh12, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[12],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r death13, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[13],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfh13, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = qivars[13],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
