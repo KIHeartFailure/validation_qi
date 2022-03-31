@@ -13,14 +13,23 @@ save(file = "./data/patreg.RData", list = c("patreg"))
 
 
 load(file = "C:/Users/Lina/STATISTIK/Projects/20200225_shfdb3/dm/data/rawData_rs.RData")
-save(file = "./data/rawData_rs.RData", list = c("rawData_rs"))
+save(file = "./data/rawData_rs.RData", list = c(
+  "newrs",
+  "oldrs"
+))
 
 load(file = "C:/Users/Lina/STATISTIK/Projects/20200225_shfdb3/dm/data/rawData_enheter.RData")
-save(file = "./data/rawData_enheter.RData", list = c("rawData_enheter"))
+save(file = "./data/rawData_enheter.RData", list = c("enheternewrs", "enheteroldrs"))
 
 load(file = "C:/Users/Lina/STATISTIK/Projects/20200225_shfdb3/dm/data/rawData_scb.RData")
-save(file = "./data/rawData_scb.RData", list = c("rawData_scb"))
+save(file = "./data/rawData_scb.RData", save(file = "./data/rawData_scb.RData", list = c(
+  "fallkontroller",
+  "lisa",
+  "antalbarn",
+  "pnr_bytt_ater",
+  "fodland",
+  "migration"
+)))
 
 load(file = "C:/Users/Lina/STATISTIK/Projects/20200225_shfdb3/dm/data/rawData_sosdors.RData")
-save(file = "./data/rawData_sosdors.RData", list = c("rawData_sosdors"))
-
+save(file = "./data/rawData_sosdors.RData", list = c("dors", "dors2"))

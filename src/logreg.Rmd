@@ -1,15 +1,16 @@
 ```{r logreg, cache=cacheon}
 
-xvars <- c("shf_location", "shf_sex", "shf_age_cat")
+xvars <- c("shf_ef_cat", "shf_location", "shf_sex", "shf_age_cat")
 
 orfunc <- function(qi) {
-  out <- data.frame(matrix(NA, ncol = 7, nrow = 1))
+  out <- data.frame(matrix(NA, ncol = 9, nrow = 1))
 
   colnames(out) <- c(
     "QI",
     levels(rsdata %>% pull(!!sym(xvars[1]))),
     levels(rsdata %>% pull(!!sym(xvars[2]))),
-    levels(rsdata %>% pull(!!sym(xvars[3])))
+    levels(rsdata %>% pull(!!sym(xvars[3]))),
+    levels(rsdata %>% pull(!!sym(xvars[4])))
   )
 
   out[1, 1] <- qi
@@ -25,23 +26,21 @@ orfunc <- function(qi) {
       out[(i * 2):(i * 2 + 1)] <- c("-", "-")
     }
     if (checkav == 4) {
-      mod <- glm(formula(paste0(qi, " == 'Yes' ~ ", xvars[i])),
-        data = rsdata,
-        family = binomial(link = "logit")
-      )
-      smod <- summary(mod)
-
+      mod <- summary(lme4::glmer(formula(paste0(qi, " == 'Yes' ~ ", xvars[i], " + (1 | shf_centre)")),
+        family = "binomial",
+        data = rsdata
+      ))
 
       out[(i * 2):(i * 2 + 1)] <- c(
         "ref",
         paste0(
-          fn(exp(smod$coefficients[2, "Estimate"]), 2),
+          fn(exp(mod$coefficients[2, "Estimate"]), 2),
           " (",
-          fn(exp(smod$coefficients[2, "Estimate"] - global_z05 * smod$coefficients[2, "Std. Error"]), 2),
+          fn(exp(mod$coefficients[2, "Estimate"] - global_z05 * mod$coefficients[2, "Std. Error"]), 2),
           "-",
-          fn(exp(smod$coefficients[2, "Estimate"] + global_z05 * smod$coefficients[2, "Std. Error"]), 2),
+          fn(exp(mod$coefficients[2, "Estimate"] + global_z05 * mod$coefficients[2, "Std. Error"]), 2),
           "), ",
-          fn(smod$coefficients[2, "Pr(>|z|)"], 3, p = T)
+          fn(mod$coefficients[2, "Pr(>|z|)"], 3, p = T)
         )
       )
     }
@@ -64,5 +63,5 @@ default_kable(qior,
   caption = "Likelihood of attainment",
   escape = TRUE
 ) %>%
-  add_header_above(c(" " = 1, "Location" = 2, "Sex" = 2, "Age" = 2))
+  add_header_above(c(" " = 1, "EF" = 2, "Location" = 2, "Sex" = 2, "Age" = 2))
 ```

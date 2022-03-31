@@ -70,12 +70,7 @@ rsdata <- rsdata %>%
     sos_out_hosphf_cr = create_crevent(sos_out_hosphf, sos_out_death)
   )
 
-# delete tmp and fix order of variables
-
-rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(30), rename = "30d", cuttime = FALSE)
-rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(30.5 * 6), rename = "6mo", cuttime = FALSE)
-rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(30), rename = "30d", cuttime = FALSE)
-rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(30.5 * 6), rename = "6mo", cuttime = FALSE)
-
-rsdata <- rsdata %>%
-  mutate_if(is.character, as.factor)
+rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(30), rename = "30d", cuttime = TRUE)
+rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(30.5 * 6), rename = "6mo", cuttime = TRUE)
+rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(30), rename = "30d", cuttime = TRUE)
+rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(30.5 * 6), rename = "6mo", cuttime = TRUE)

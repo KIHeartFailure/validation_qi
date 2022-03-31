@@ -1,0 +1,42 @@
+```{r boxplot, cache=cacheon, fig.cap="Distribution of hospitals performance", fig.width=9, fig.height=6}
+
+
+for (i in seq_along(qivars)) {
+    
+  tmp <- rsdata %>%
+    filter(!is.na(!!sym(qivars[i]))) %>%
+    group_by(shf_centre) %>%
+    count(!!sym(qivars[i]), .drop = F) %>%
+    mutate(
+      tot = sum(n),
+      percent = as.numeric(fn(n / tot * 100, 0))
+    ) %>%
+    ungroup() %>%
+    filter(!!sym(qivars[i]) == "Yes") %>%
+    filter(tot > 10) %>%
+    select(shf_centre, percent) %>%
+    mutate(qivar = str_replace(qivars[i], "qi\\d_\\d",""), 
+           qinum = i)
+  
+  if (i == 1) {qidata <<- tmp}
+  if (i > 1) {qidata <<- bind_rows(qidata, tmp)}
+}
+
+qidata$qivar <- forcats::fct_reorder(qidata$qivar, qidata$qinum)
+
+cexmy <- 1.5
+# c(bottom, left, top, right)
+par(mar = c(5, 4, 0, 0) + 0.1)
+
+b <- boxplot(percent ~ qivar, data = qidata, col = global_colsblue[5], 
+             ylab = "Distributation of hospital performance (%)", xlab = "", axes = FALSE, cex.lab = cexmy)
+axis(1, at = 1:13, b$names, tick = TRUE, cex.axis = cexmy, gap.axis = -10000000, las = 2)
+axis(2, cex.axis = cexmy, las = 2)
+box(bty = "l")
+
+abline(h = 50, col = "grey", lty = 2, lwd = 1)
+abline(h = 70, col = "grey", lty = 2, lwd = 1)
+abline(h = 80, col = "grey", lty = 2, lwd = 1)
+abline(h = 90, col = "grey", lty = 2, lwd = 1)
+
+```

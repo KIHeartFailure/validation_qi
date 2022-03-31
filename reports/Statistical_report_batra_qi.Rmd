@@ -53,17 +53,14 @@ cacheon <- TRUE
 
 ## Data source
 
-The same raw data as SHFDB3, https://kiheartfailure.github.io/shfdb3/. 
-In order to include patients up until 2019-12-31 the data management 
-was however performed separatly for this analyses. 
+The same raw data as SHFDB3, https://kiheartfailure.github.io/shfdb3/. In order to include patients up until 2019-12-31 the data management 
+was however performed separately for this analyses. 
 
 ## Inclusion/exclusion criteria
 
 ```{r flow}
 default_kable(flow, caption = "Flowchart")
 ```
-
-FRÅGA: OK till sel kritier? 
 
 First patient in: `r min(rsdata$shf_indexdtm)` and last patient in: `r max(rsdata$shf_indexdtm)`.  
 
@@ -77,13 +74,34 @@ The median age (IQR) is `r rsdata %>% summarise(med = fn(median(shf_age), dig = 
   filter(shf_sex == "Female") %>%
   pull(perc)`% females.    
 
+There were `r rsdata %>% group_by(shf_centre) %>% slice(1) %>% nrow()` centers with 
+  `r rsdata %>% count(shf_centre) %>% summarise(med = fn(median(n), dig = 1),
+                                             q1 = fn(quantile(n, probs = 0.25), dig = 1),
+                                             q3 = fn(quantile(n, probs = 0.75), dig = 1)) %>%
+                                   mutate(out = paste0(med, " (", q1, "-", q3, ")")) %>%
+                                   pull(out)` patients.      
+
 ## Created variables 
 
 ```{r npr}
 default_kable(metaout, caption = "Outcomes and comorbidities from NPR")
 ```
 
-FRÅGA: OK till defintioner?
+## Definitions of QI variables
+
+Not an easy read, sorry, can help to "translate" into words if needed. 
+
+NOTE: Made changes to the ICD definition (so more in line with CRT). 
+
+Note that loop diuretic includes BOTH pats prescribed daily or when needed (however not IV). OK?
+
+```{r codecreateqi, code = readLines("../munge/11-qivars.R"), echo = TRUE, eval = FALSE}
+
+```
+
+I grouped the op based scores into a categorical variable as well, for presentational purposes in for example KM plots. 
+(note that the scores won't take even numbers for example 1-6, but pretty much on a continuous scale). 
+Let me know if you prefer other cut-offs.
 
 # Statistical analysis 
 
@@ -93,18 +111,19 @@ All analyses were performed using `r sessionInfo()$R.version$version.string` [@r
 The level of significance is set to 5%, two-sided. No adjustment for multiple 
 comparisons were made and therefore the results should be viewed with some care.
 
+## Centre
+
+All analyses on centre variation include only centres => 10 patients for the respective analyses. 
+
 ## Missing data
 
 Missing data was imputed with multiple imputation (n = 10) using mice [@mice] 
 for the multivariable Cox regression models. 
 Variables included in the model are indicated in 
 Table \ref{tab:tab1}. All-cause mortality was included as the Nelson-Aalen estimator. 
-
-FRÅGA: OK till ovan? 
+The QI were not imputed and based on non-imputed raw data. 
 
 ## Baseline characteristics
-
-FRÅGA: Jag öste på och modifierade variabler lite mot sapen, både för justering och i tabellen. Kolla och se om OK.
 
 ```{r, child = "../src/tab1.Rmd"}
 
@@ -112,20 +131,44 @@ FRÅGA: Jag öste på och modifierade variabler lite mot sapen, både för juste
 
 ## Feasibility and attainment assessment
 
-FRÅGA: I baseline tabellen och liklihood har du velat dela upp på in/out-patint, kön och ålder. 
-I denna tab vill du dela upp på EF (men ej in/out-pat), kön och ålder. 
-Föreslår att du gör på samma sätt i alla tabeller, om det inte finns en väldigt bra skäl att göra olika.
-Kanske dela upp på alla 4?
-
 ```{r, child = "../src/feasability.Rmd"}
 
 ```
 
-## Likelihood of attainment for each of the 2021 ESC QIs for HF
+\clearpage
+
+The likelihood of attainment is assessed using a generalized linear mixed-effects model
+(GLMM) with a logit link and a random effect for centre. 
 
 ```{r, child = "../src/logreg.Rmd"}
 
 ```
+
+You wanted to remove the tab Likelihood of attainment, please do if you see fit. 
+This is basically the same info as in Tab \ref{tab:tabqibyvars} but also tested for stat sig (and with an effect measure). 
+Could also look at more variables (in a forestplot) but then you would have one 
+forestplot for each qi so think perhaps better just to look at these 4 variables and keep it simple? 
+
+Currently the OR are unadjusted but could adjust, but not sure it would add info you want?
+
+\clearpage
+
+Let me know what (abbreviated) names you want in the corr plot (also for other plots). 
+
+Note the definition of CRT (to be in the denominator you need a measure on ecg so 
+per definition all patients with missing ecg will NOT fulfil the crt qi), 
+so the high correlation between crt and ecg is probably in large part due to 
+the definition of the qi (so basically not a true clinical corr, but a data technicality). 
+
+```{r, child = "../src/corr.Rmd"}
+
+```
+
+```{r, child = "../src/boxplot.Rmd"}
+
+```
+
+\clearpage
 
 ## Outcome analysis
 
@@ -133,21 +176,13 @@ The following outcomes are considered:
 
 - All-cause mortality
 - First Heart failure hospitalization (HFH)
-- CV mortailty. FRÅGA: står olika på olika ställen i sap, ska vara med eller ej?
 
 Data were censored at 2019-12-31, death (for the outcome HFH) or emigration from Sweden. 
 
-All-cause mortality was presented with a Kaplan-Meier curve and first 
-HFH with a cumulative incidence curve considering death as a competing event. Cox proportional hazards regressions were 
-used to model the time to first event analysis. Variables included in the model are indicated in 
-Table \ref{tab:tab1}.
-
-### Assumptions
-
-The proportional hazards assumption was investigated using the scaled Schoenfeld 
-residuals (cox.zph in [@survival-package]) for the primary outcome. 
-Possible outliers were visually inspected by plotting the dfbetas. 
-=> XXXX. 
+The outcomes were presented with Kaplan-Meier plots. Cox proportional hazards regressions with a
+frailty term for centre were used to model the time to first event. Variables included in the model are indicated in 
+Table \ref{tab:tab1}. Adjustment is not performed for variables that are included in the calculation of the QI 
+(i.e, for qi ef, ef is not adjusted for, for qi lab, anemia and eGFR is not adjusted for...). 
 
 The median (min-max) follow-up is 
 `r rsdata %>% summarise(med = fn(median(sos_outtime_death / 365.25 * 12), dig = 1),
@@ -158,14 +193,37 @@ The median (min-max) follow-up is
                                    `r rsdata %>% summarise(sumpy = fn(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
                                    pull(sumpy)` patient-years of follow-up.
 
+I didn't do the caterpillar plot you requested. If the focus of the paper is feasibility and validation of the QI, and since the 
+fig does not include the QI, I think it will just dilute the message and be a bit confusing. 
+There is centre presentation in the baseline tab and qi tabs but I think this is much less "dominant". We had this discussion at our meeting, how much focus should be put on the centre variation 
+(or should leave for another paper), regarding the BMJ method. Perhaps decide on the focus first? 
+
+Note that in the data there are BOTH in and out-patients. Does this make it difficult to interpret? 
+For example lab values are more common in in-patients so the association between 
+labs taken and outcomes could perhaps be an effect of this? Restrict analyses to either in or out-pats? Stratify also outcome analyses by in and out-patients? 
+
+Some models did not converge (the odd looking ones with ridiculously large CI), will remove from output later, for now just disregard. 
+
+I think maybe a better presentation is needed to highlight some of the numbers in the cox regression table? 
+Perhaps choose one time point (6mo or long-term) and present the adj numbers in forestplots (one for all-cause mort and one for hfh) 
+and place the complete tab in supplements?
+
+### Assumptions
+
+TO DO: The proportional hazards assumption was investigated using the scaled Schoenfeld 
+residuals (cox.zph in [@survival-package]) for the primary outcome. 
+Possible outliers were visually inspected by plotting the dfbetas. 
+=> XXXX. Also check liniearity ect. 
+
+```{r, child = "../src/outtab.Rmd"}
+
+```
+
+\clearpage
 
 ```{r, child = "../src/km.Rmd"}
 
 ```
-
-#```{r, child = "../src/outtab.Rmd"}
-
-#```
 
 \clearpage
 \newpage

@@ -1,24 +1,59 @@
 ```{r tabqi, cache=cacheon}
 
-tab1all <- print(CreateTableOne(
-  vars = qivars,
-  data = rsdata
+tab1 <- print(CreateTableOne(
+  vars = c(qivars, compqivars),
+  data = rsdata, 
 ),
 smd = FALSE,
 missing = TRUE,
 printToggle = FALSE,
-nonnormal = tabvars,
+nonnormal = compqivars,
 catDigits = 1,
 contDigits = 1,
 noSpaces = TRUE,
 explain = FALSE
 )
-tab1all <- as_tibble(cbind(QI = rownames(tab1all), tab1all))
+tab1 <- as_tibble(cbind(var = rownames(tab1), tab1)) %>%
+  select(var, Missing, Overall) %>%
+  mutate(hosp = NA)
 
+
+tmp <- lapply(c(qivars, compqivars), tab1center)
+
+tab1 <- tab1 %>%
+  # remove = Yes
+  mutate(across(everything(), str_replace_all, fixed(" = Yes"), "")) %>%
+  mutate(across(everything(), str_replace_all, fixed("NA [NA, NA]"), "-")) %>%
+  mutate(across(everything(), str_replace_all, fixed("0 (NaN)"), "-")) %>%
+  mutate(
+    # clean up opbased values
+    var = str_replace_all(var, "ob\\d ",""),
+
+    # so no probs
+    var = sanitize_text(var),
+    
+    # space in Latex output (fix this other way?)
+    var = sub("  ", ". ", var)
+  )
+
+write.xlsx(tab1, paste0("./output/tabs/tabqi_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+
+colnames(tab1) <- sanitize_text(c("QI", "Not applicable (%)", "Overall", "Hospital variation median [q1-q3]"))
+
+footnote(default_kable(tab1,
+  font_size = 6,
+  caption = "Quality Indicators",
+  escape = FALSE
+),
+  general = "The hospital variation is the median [q1-q3] of the median (continuous variables) or proportion (categorical variables)."
+)
+```
+
+```{r tabqibyvars, cache=cacheon}
 
 tab1func <- function(stratavar) {
   tab1 <- print(CreateTableOne(
-    vars = qivars,
+    vars = c(qivars, compqivars),
     data = rsdata,
     strata = stratavar,
     test = FALSE
@@ -26,7 +61,7 @@ tab1func <- function(stratavar) {
   smd = FALSE,
   missing = FALSE,
   printToggle = FALSE,
-  nonnormal = tabvars,
+  nonnormal = compqivars,
   catDigits = 1,
   contDigits = 1,
   noSpaces = TRUE,
@@ -35,9 +70,11 @@ tab1func <- function(stratavar) {
   tab1 <- as_tibble(cbind(QI = rownames(tab1), tab1))
 }
 
+
+tab1ef <- tab1func(stratavar = "shf_ef_cat")
 tab1sex <- tab1func(stratavar = "shf_sex")
 tab1age <- tab1func(stratavar = "shf_age_cat")
-tab1location <- tab1func(stratavar = "shf_ef_cat")
+tab1location <- tab1func(stratavar = "shf_location")
 
 tab1 <- Reduce(
   function(...) {
@@ -45,29 +82,34 @@ tab1 <- Reduce(
       by = "QI"
     )
   },
-  list(tab1all, tab1location, tab1sex, tab1age)
+  list(tab1ef, tab1location, tab1sex, tab1age)
 )
-
 
 tab1 <- tab1 %>%
   # remove = Yes
   mutate(across(everything(), str_replace_all, fixed(" = Yes"), "")) %>%
+  mutate(across(everything(), str_replace_all, fixed("NA [NA, NA]"), "-")) %>%
+  mutate(across(everything(), str_replace_all, fixed("0 (NaN)"), "-")) %>%
   mutate(
+    # clean up opbased values
+    QI = str_replace_all(QI, "ob\\d ",""),
+    
     # so no probs
-    QI = sanitize_text(QI)
+    QI = sanitize_text(QI),
+    
+    # space in Latex output (fix this other way?)
+    QI = sub("  ", ". ", QI)
   )
 
 
-write.xlsx(tab1, paste0("./output/tabs/tabqi_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+write.xlsx(tab1, paste0("./output/tabs/tabqi_stratified_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
 
-colnams <- colnames(tab1)
-colnams <- str_replace(colnams, "Missing", "Not applicaple")
-colnames(tab1) <- sanitize_text(colnams)
+colnames(tab1) <- sanitize_text(colnames(tab1))
 
 default_kable(tab1,
   font_size = 6,
-  caption = "Quality Indicators",
+  caption = "Quality Indicators by LVEF, location, sex and age",
   escape = FALSE
 ) %>%
-  add_header_above(c(" " = 1, " " = 1, " " = 1, "LVEF" = 2, "Sex" = 2, "Age" = 2))
+  add_header_above(c(" " = 1, "LVEF" = 2, "Location" = 2, "Sex" = 2, "Age" = 2))
 ```

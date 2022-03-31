@@ -3,7 +3,7 @@
 kmfunc <- function(qi, time, event, eventcr = NULL, eventname, yposplus = rep(0, 2)) {
   cexmy <- 1.2
   endtime <- 6
-  
+
   fits <- survfit(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ ", qi)),
     data = rsdata
   ) # needed also for cuminc for n at risk
@@ -23,7 +23,7 @@ kmfunc <- function(qi, time, event, eventcr = NULL, eventname, yposplus = rep(0,
 
     plot(fit[1:2],
       ylab = eventname,
-      col = global_kicols,
+      col = global_colsblue[c(2, 5)],
       wh = c(1110, 1110),
       xlim = c(0, endtime * 365),
       ylim = c(0, 1),
@@ -42,7 +42,7 @@ kmfunc <- function(qi, time, event, eventcr = NULL, eventname, yposplus = rep(0,
       ylab = eventname,
       xscale = 365,
       yscale = 100,
-      col = global_kicols,
+      col = global_colsblue[c(2, 5)],
       mark.time = FALSE,
       bty = "n",
       xlim = c(0, endtime * 365),
@@ -86,14 +86,94 @@ kmfunc <- function(qi, time, event, eventcr = NULL, eventname, yposplus = rep(0,
 
   nrisk <- summary(fits, seq(0, endtime, 1) * 365, extend = T)
 
-  axis(1, at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=No")], 
-       line = 3.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000)
-  axis(1, at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=Yes")], 
-       line = 4.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000)
+  axis(1,
+    at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=No")],
+    line = 3.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000
+  )
+  axis(1,
+    at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=Yes")],
+    line = 4.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000
+  )
+}
+
+kmfunc4 <- function(qi, time, event, eventname, yposplus = rep(0, 4)) {
+  cexmy <- 1.2
+  endtime <- 6
+
+  fits <- survfit(formula(paste0("Surv(", time, ",", event, "=='Yes') ~ ", qi)),
+    data = rsdata
+  )
+
+  # c(bottom, left, top, right)
+  par(mar = c(8.5, 8.6, 1, 4.25) + 0.1)
+  plots <- plot(fits,
+    fun = "event",
+    ylab = eventname,
+    xscale = 365,
+    yscale = 100,
+    col = global_colsblue[c(1, 3, 5, 7)],
+    mark.time = FALSE,
+    bty = "n",
+    xlim = c(0, endtime * 365),
+    ylim = c(0, 1),
+    xlab = "Years",
+    cex.lab = cexmy,
+    axes = F,
+    lwd = 3,
+    lty = c(1, 2, 3, 4),
+    xaxs = "i", yaxs = "i"
+  )
+
+  axis(2, seq(0, 1, 0.25), seq(0, 100, 25), las = 2, cex.axis = cexmy)
+  axis(1, at = seq(0, endtime, 1) * 365, seq(0, endtime, 1), cex.axis = cexmy)
+
+  ypos <- 1 - summary(fits, 364 * endtime, extend = T)$surv
+
+  levs <- levels(rsdata %>% pull(!!sym(qi)))
+  levsr <- str_replace_all(levs, "ob\\d", "")
+
+  ylabs <- bind_cols(
+    ypos = c(ypos + yposplus),
+    ytext = levsr
+  )
+
+  mtext(
+    side = 4,
+    line = .2,
+    at = ylabs$ypos,
+    ylabs$ytext,
+    las = 1,
+    cex = cexmy,
+  )
+
+  mtext("No. at risk", side = 1, line = 3.5, at = -540, adj = 0, cex = cexmy, font = 2)
+  mtext(levsr[1], side = 1, line = 4.5, at = -540, adj = 0, cex = cexmy)
+  mtext(levsr[2], side = 1, line = 5.5, at = -540, adj = 0, cex = cexmy)
+  mtext(levsr[3], side = 1, line = 6.5, at = -540, adj = 0, cex = cexmy)
+  mtext(levsr[4], side = 1, line = 7.5, at = -540, adj = 0, cex = cexmy)
+
+  nrisk <- summary(fits, seq(0, endtime, 1) * 365, extend = T)
+
+  axis(1,
+    at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=", levs[1])],
+    line = 3.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000
+  )
+  axis(1,
+    at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=", levs[2])],
+    line = 4.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000
+  )
+  axis(1,
+    at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=", levs[3])],
+    line = 5.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000
+  )
+  axis(1,
+    at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=", levs[4])],
+    line = 6.5, tick = FALSE, cex.axis = cexmy, gap.axis = -10000000
+  )
 }
 ```
 
-```{r death1, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death1, fig.cap=paste0("AC death - ", qivars[1]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[1],
   time = "sos_outtime_death",
@@ -103,18 +183,18 @@ kmfunc(
 )
 ```
 
-```{r hfh1, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh1, fig.cap=paste0("First HFH - ", qivars[1]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[1],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death2, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death2, fig.cap=paste0("AC death - ", qivars[2]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[2],
   time = "sos_outtime_death",
@@ -124,18 +204,18 @@ kmfunc(
 )
 ```
 
-```{r hfh2, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh2, fig.cap=paste0("First HFH - ", qivars[2]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[2],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death3, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death3, fig.cap=paste0("AC death - ", qivars[3]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[3],
   time = "sos_outtime_death",
@@ -145,18 +225,18 @@ kmfunc(
 )
 ```
 
-```{r hfh3, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh3, fig.cap=paste0("First HFH - ", qivars[3]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[3],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death4, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death4, fig.cap=paste0("AC death - ", qivars[4]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[4],
   time = "sos_outtime_death",
@@ -166,18 +246,18 @@ kmfunc(
 )
 ```
 
-```{r hfh4, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh4, fig.cap=paste0("First HFH - ", qivars[4]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[4],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death5, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death5, fig.cap=paste0("AC death - ", qivars[5]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[5],
   time = "sos_outtime_death",
@@ -187,18 +267,18 @@ kmfunc(
 )
 ```
 
-```{r hfh5, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh5, fig.cap=paste0("First HFH - ", qivars[5]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[5],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death6, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death6, fig.cap=paste0("AC death - ", qivars[6]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[6],
   time = "sos_outtime_death",
@@ -208,18 +288,18 @@ kmfunc(
 )
 ```
 
-```{r hfh6, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh6, fig.cap=paste0("First HFH - ", qivars[6]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[6],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death7, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death7, fig.cap=paste0("AC death - ", qivars[7]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[7],
   time = "sos_outtime_death",
@@ -229,18 +309,18 @@ kmfunc(
 )
 ```
 
-```{r hfh7, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh7, fig.cap=paste0("First HFH - ", qivars[7]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[7],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death8, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death8, fig.cap=paste0("AC death - ", qivars[8]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[8],
   time = "sos_outtime_death",
@@ -250,18 +330,18 @@ kmfunc(
 )
 ```
 
-```{r hfh8, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh8, fig.cap=paste0("First HFH - ", qivars[8]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[8],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death9, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death9, fig.cap=paste0("AC death - ", qivars[9]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[9],
   time = "sos_outtime_death",
@@ -271,18 +351,18 @@ kmfunc(
 )
 ```
 
-```{r hfh9, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh9, fig.cap=paste0("First HFH - ", qivars[9]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[9],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death10, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death10, fig.cap=paste0("AC death - ", qivars[10]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[10],
   time = "sos_outtime_death",
@@ -292,18 +372,18 @@ kmfunc(
 )
 ```
 
-```{r hfh10, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh10, fig.cap=paste0("First HFH - ", qivars[10]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[10],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death11, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death11, fig.cap=paste0("AC death - ", qivars[11]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[11],
   time = "sos_outtime_death",
@@ -313,18 +393,18 @@ kmfunc(
 )
 ```
 
-```{r hfh11, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh11, fig.cap=paste0("First HFH - ", qivars[11]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[11],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death12, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death12, fig.cap=paste0("AC death - ", qivars[12]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[12],
   time = "sos_outtime_death",
@@ -334,18 +414,18 @@ kmfunc(
 )
 ```
 
-```{r hfh12, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh12, fig.cap=paste0("First HFH - ", qivars[12]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[12],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )
 ```
 
-```{r death13, fig.cap="AC death", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r death13, fig.cap=paste0("AC death - ", qivars[13]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[13],
   time = "sos_outtime_death",
@@ -355,12 +435,71 @@ kmfunc(
 )
 ```
 
-```{r hfh13, fig.cap="First HFH", cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+```{r hfh13, fig.cap=paste0("First HFH - ", qivars[13]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
 kmfunc(
   qi = qivars[13],
   time = "sos_outtime_hosphf",
   event = "sos_out_hosphf",
-  eventcr = "sos_out_hosphf_cr",
+  # eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r deathc1, fig.cap=paste0("AC death - ", compqivars[4]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc4(
+  qi = compqivars[4],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)"
+)
+```
+
+```{r hfhc1, fig.cap=paste0("First HFH - ", compqivars[4]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc4(
+  qi = compqivars[4],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  # eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)"
+)
+```
+
+```{r deathc2, fig.cap=paste0("AC death - ", compqivars[5]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc4(
+  qi = compqivars[5],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)"
+)
+```
+
+```{r hfhc2, fig.cap=paste0("First HFH - ", compqivars[5]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc4(
+  qi = compqivars[5],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  # eventcr = "sos_out_hosphf_cr",
+  eventname = "First HFH (%)"
+)
+```
+
+```{r deathc3, fig.cap=paste0("AC death - ", compqivars[3]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = compqivars[3],
+  time = "sos_outtime_death",
+  event = "sos_out_death",
+  eventname = "All-cause mortality (%)",
+  yposplus = c(0, 0)
+)
+```
+
+```{r hfhc3, fig.cap=paste0("First HFH - ", compqivars[3]), cache=cacheon, dependson="km", fig.width=8, fig.height=7}
+kmfunc(
+  qi = compqivars[3],
+  time = "sos_outtime_hosphf",
+  event = "sos_out_hosphf",
+  # eventcr = "sos_out_hosphf_cr",
   eventname = "First HFH (%)",
   yposplus = c(0, 0)
 )

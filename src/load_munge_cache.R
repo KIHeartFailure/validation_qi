@@ -17,8 +17,10 @@ ProjectTemplate::cache("flow")
 ProjectTemplate::cache("metaout")
 
 ProjectTemplate::cache("tabvars")
-ProjectTemplate::cache("impmodvars")
 ProjectTemplate::cache("modvars")
 ProjectTemplate::cache("qivars")
+ProjectTemplate::cache("compqivars")
 
 ProjectTemplate::cache("rsdata")
+
+ProjectTemplate::cache("imp")
