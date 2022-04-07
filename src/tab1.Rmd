@@ -161,7 +161,7 @@ tab1 <- left_join(tab1,
     )
   )
 
-write.xlsx(tab1 %>% select(Variable, `>40%`:p.y.y), paste0("./output/tabs/tab1_stratified_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+write.xlsx(tab1 %>% select(Variable, 2:13), paste0("./output/tabs/tab1_stratified_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
 
 # footnotes
 tab1 <- tab1 %>%
@@ -180,7 +180,7 @@ tab1 <- tab1 %>%
     # space in Latex output (fix this other way?)
     Variable = sub("  ", ". ", Variable)
   ) %>%
-  select(Variable, `>40%`:p.y.y)
+  select(Variable, 2:13)
 
 ## fix in order to use escape = TRUE
 colnams <- colnames(tab1)

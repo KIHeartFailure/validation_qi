@@ -1,8 +1,6 @@
 rsdata <- rsdata %>%
   mutate(
-    
     shf_sex = relevel(factor(shf_sex), ref = "Male"),
-    
     shf_indexyear_cat = case_when(
       shf_indexyear >= 2013 & shf_indexyear <= 2013 ~ "2013-2016",
       shf_indexyear <= 2019 ~ "2017-2019"
@@ -25,7 +23,7 @@ rsdata <- rsdata %>%
       shf_ef %in% c(">=50", "40-49") ~ 1,
       shf_ef %in% c("30-39", "<30") ~ 2
     ),
-    labels = c(">40%", "<=40%"),
+    labels = c(">=40%", "<40%"),
     levels = 1:2
     ),
     shf_smoking_cat = factor(case_when(
@@ -65,12 +63,29 @@ rsdata <- rsdata %>%
     ),
     levels = 1:4,
     labels = c("Prior HFH < 6 mo", "Prior HFH 6-12 mo", "Prior HFH > 12 mo", "No prior HFH")
-    ), 
-    
+    ),
+
+    # outcome
+    sos_out_deathcvhosphf = case_when(
+      sos_out_deathcv == "Yes" |
+        sos_out_hosphf == "Yes" ~ "Yes",
+      TRUE ~ "No"
+    ),
     sos_out_hosphf_cr = create_crevent(sos_out_hosphf, sos_out_death)
   )
 
+rsdata <- cut_surv(rsdata, sos_out_deathcvhosphf, sos_outtime_hosphf, floor(30), rename = "30d", cuttime = FALSE)
+rsdata <- cut_surv(rsdata, sos_out_deathcvhosphf, sos_outtime_hosphf, floor(30.5 * 6), rename = "6mo", cuttime = FALSE)
+rsdata <- cut_surv(rsdata, sos_out_deathcvhosphf, sos_outtime_hosphf, floor(365), rename = "1yr", cuttime = FALSE)
+
 rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(30), rename = "30d", cuttime = TRUE)
 rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(30.5 * 6), rename = "6mo", cuttime = TRUE)
+rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(365), rename = "1yr", cuttime = TRUE)
+
+rsdata <- cut_surv(rsdata, sos_out_deathcv, sos_outtime_death, floor(30), rename = "30d", cuttime = FALSE)
+rsdata <- cut_surv(rsdata, sos_out_deathcv, sos_outtime_death, floor(30.5 * 6), rename = "6mo", cuttime = FALSE)
+rsdata <- cut_surv(rsdata, sos_out_deathcv, sos_outtime_death, floor(365), rename = "1yr", cuttime = FALSE)
+
 rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(30), rename = "30d", cuttime = TRUE)
 rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(30.5 * 6), rename = "6mo", cuttime = TRUE)
+rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(365), rename = "1yr", cuttime = TRUE)

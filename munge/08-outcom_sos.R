@@ -216,3 +216,5 @@ rsdata <- create_sosvar(
   comduration = TRUE, 
   meta_reg = "NPR (in)"
 )
+
+rm(patreg)

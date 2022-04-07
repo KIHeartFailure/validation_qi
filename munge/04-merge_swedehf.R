@@ -385,3 +385,7 @@ rsdata <- left_join(rsdata,
   rsdataindex,
   by = "LopNr"
 )
+
+rm(oldrs)
+rm(newrs)
+rm(rsdataindex)

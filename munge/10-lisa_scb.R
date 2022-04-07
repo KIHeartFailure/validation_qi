@@ -65,3 +65,7 @@ rsdata <- left_join(
     scb_dispincome_cat = factor(scb_dispincome_cat, labels = c("Low", "Medium", "High"))
   ) %>%
   select(-`33%`, -`66%`)
+
+
+rm(lisa)
+rm(antalbarn)

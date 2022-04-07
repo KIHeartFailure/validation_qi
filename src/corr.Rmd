@@ -1,16 +1,33 @@
-```{r corr, cache=cacheon, fig.cap="Correlation of all QI pairs"}
+```{r corrfunc, cache=cacheon}
 
-corrdata <- rsdata %>%
-  select(!!!syms(qivars)) %>%
-  mutate_all(as.numeric)
+corrfunc <- function(notvars) {
+  corrdata <- rsdata %>%
+    select(!!!syms(qivars)) %>%
+    select(-all_of(notvars)) %>%
+    mutate_all(as.numeric)
 
-names(corrdata) <- str_replace_all(names(corrdata), "qi\\d_\\d", "")
+  names(corrdata) <- str_replace_all(names(corrdata), "qi\\d_\\d", "")
+  names(corrdata) <- str_replace_all(names(corrdata), "_sens", "")
 
-cor = rcorr(as.matrix(corrdata), type = c("spearman"))
+  cor <- rcorr(as.matrix(corrdata), type = c("spearman"))
 
-corrplot(cor$r, method = c("color"), type = "upper", tl.pos = 'n', na.label = "square", na.label.col = "grey", diag = FALSE,
-         p.mat = cor$P, insig = "label_sig", sig.level = c(0.05, 0.01, 0.001), pch.cex = 0.8, cl.pos = "r", mar = c(1, 2, 0, 0) + 0.1)
-corrplot(cor$r, add = TRUE, type = 'lower', method = 'number', 
-         tl.pos = 'd', cl.pos = 'n', col = "black", na.label = "-", tl.col = "red", number.cex = 0.9)
+  corrplot(cor$r,
+    method = c("color"), type = "upper", tl.pos = "n", na.label = "square", na.label.col = "grey", diag = FALSE,
+    p.mat = cor$P, insig = "label_sig", sig.level = c(0.05, 0.01, 0.001), pch.cex = 0.8, cl.pos = "r", mar = c(1, 2, 0, 0) + 0.1
+  )
+  corrplot(cor$r,
+    add = TRUE, type = "lower", method = "number",
+    tl.pos = "d", cl.pos = "n", col = "black", na.label = "-", tl.col = "red", number.cex = 0.9
+  )
+}
+```
 
+```{r corr, cache=cacheon, dependson="corrfunc", fig.cap="Correlation of all QI pairs"}
+
+corrfunc(notvars = c("qi4_5crt_sens", "qi4_6icd_sens"))
+```
+
+```{r corrsens, cache=cacheon, dependson="corrfunc", fig.cap="Correlation of all QI pairs - CRT/ICD sensitivity analysis"}
+
+corrfunc(notvars = c("qi4_5crt", "qi4_6icd"))
 ```

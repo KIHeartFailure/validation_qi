@@ -16,6 +16,7 @@ nocite: '@*'
 urlcolor: blue
 linkcolor: black
 header-includes:
+   - \usepackage{subfig}
    - \usepackage{draftwatermark}
 ---
 
@@ -87,21 +88,22 @@ There were `r rsdata %>% group_by(shf_centre) %>% slice(1) %>% nrow()` centers w
 default_kable(metaout, caption = "Outcomes and comorbidities from NPR")
 ```
 
-## Definitions of QI variables
+```{r ddr}
+default_kable(metalm, caption = "Medications from DDR")
+```
 
-Not an easy read, sorry, can help to "translate" into words if needed. 
+## Definition of QI variables
 
-NOTE: Made changes to the ICD definition (so more in line with CRT). 
-
-Note that loop diuretic includes BOTH pats prescribed daily or when needed (however not IV). OK?
-
-```{r codecreateqi, code = readLines("../munge/11-qivars.R"), echo = TRUE, eval = FALSE}
+```{r codecreateqi, code = readLines("../munge/12-qivars.R"), echo = TRUE, eval = FALSE}
 
 ```
 
-I grouped the op based scores into a categorical variable as well, for presentational purposes in for example KM plots. 
-(note that the scores won't take even numbers for example 1-6, but pretty much on a continuous scale). 
-Let me know if you prefer other cut-offs.
+Note that the EF QI is removed from the opportunity based score no 2.
+
+### Sensitivity analysis
+
+For the CRT and ICD QI a sensitivity analysis was performed throughout including patients with EF <40% instead of <30% and 
+not applying the ECG (for CRT) and NYHA class criteria. 
 
 # Statistical analysis 
 
@@ -138,27 +140,13 @@ The QI were not imputed and based on non-imputed raw data.
 \clearpage
 
 The likelihood of attainment is assessed using a generalized linear mixed-effects model
-(GLMM) with a logit link and a random effect for centre. 
+(GLMM) with a logit link and a random effect for centre. The OR are unadjusted.
 
 ```{r, child = "../src/logreg.Rmd"}
 
 ```
 
-You wanted to remove the tab Likelihood of attainment, please do if you see fit. 
-This is basically the same info as in Tab \ref{tab:tabqibyvars} but also tested for stat sig (and with an effect measure). 
-Could also look at more variables (in a forestplot) but then you would have one 
-forestplot for each qi so think perhaps better just to look at these 4 variables and keep it simple? 
-
-Currently the OR are unadjusted but could adjust, but not sure it would add info you want?
-
 \clearpage
-
-Let me know what (abbreviated) names you want in the corr plot (also for other plots). 
-
-Note the definition of CRT (to be in the denominator you need a measure on ecg so 
-per definition all patients with missing ecg will NOT fulfil the crt qi), 
-so the high correlation between crt and ecg is probably in large part due to 
-the definition of the qi (so basically not a true clinical corr, but a data technicality). 
 
 ```{r, child = "../src/corr.Rmd"}
 
@@ -174,8 +162,10 @@ the definition of the qi (so basically not a true clinical corr, but a data tech
 
 The following outcomes are considered: 
 
-- All-cause mortality
+- Composite of CV mortality/First Heart failure hospitalization (HFH)
+- CV mortality
 - First Heart failure hospitalization (HFH)
+- All-cause mortality
 
 Data were censored at 2019-12-31, death (for the outcome HFH) or emigration from Sweden. 
 
@@ -192,21 +182,6 @@ The median (min-max) follow-up is
                                    pull(out)` months for a total of 
                                    `r rsdata %>% summarise(sumpy = fn(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
                                    pull(sumpy)` patient-years of follow-up.
-
-I didn't do the caterpillar plot you requested. If the focus of the paper is feasibility and validation of the QI, and since the 
-fig does not include the QI, I think it will just dilute the message and be a bit confusing. 
-There is centre presentation in the baseline tab and qi tabs but I think this is much less "dominant". We had this discussion at our meeting, how much focus should be put on the centre variation 
-(or should leave for another paper), regarding the BMJ method. Perhaps decide on the focus first? 
-
-Note that in the data there are BOTH in and out-patients. Does this make it difficult to interpret? 
-For example lab values are more common in in-patients so the association between 
-labs taken and outcomes could perhaps be an effect of this? Restrict analyses to either in or out-pats? Stratify also outcome analyses by in and out-patients? 
-
-Some models did not converge (the odd looking ones with ridiculously large CI), will remove from output later, for now just disregard. 
-
-I think maybe a better presentation is needed to highlight some of the numbers in the cox regression table? 
-Perhaps choose one time point (6mo or long-term) and present the adj numbers in forestplots (one for all-cause mort and one for hfh) 
-and place the complete tab in supplements?
 
 ### Assumptions
 
