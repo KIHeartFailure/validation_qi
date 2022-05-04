@@ -1,39 +1,59 @@
-```{r logreg, cache=cacheon}
+```{r logregfunc, cache=cacheon}
 
-xvars <- c("shf_ef_cat", "shf_location", "shf_sex", "shf_age_cat")
+qivarsuse <- c(qivars, qisensvars, compqivars)
 
-orfunc <- function(qi) {
-  out <- data.frame(matrix(NA, ncol = 9, nrow = 1))
+orfunc <- function(xvar, xvarname) {
+  for (i in seq_along(qivarsuse)) {
+    cl <- class(rsdata %>% pull(!!sym(qivarsuse[i])))
 
-  colnames(out) <- c(
-    "QI",
-    levels(rsdata %>% pull(!!sym(xvars[1]))),
-    levels(rsdata %>% pull(!!sym(xvars[2]))),
-    levels(rsdata %>% pull(!!sym(xvars[3]))),
-    levels(rsdata %>% pull(!!sym(xvars[4])))
-  )
+    if (cl == "numeric") {
+      out <- rsdata %>%
+        filter(!is.na(!!sym(qivarsuse[i])) & !is.na(!!sym(xvar))) %>%
+        group_by(!!sym(xvar), .drop = FALSE) %>%
+        summarise(
+          med = fn(median(!!sym(qivarsuse[i]), na.rm = TRUE), 1),
+          q1 = fn(quantile(!!sym(qivarsuse[i]), 0.25, na.rm = TRUE), 1),
+          q3 = fn(quantile(!!sym(qivarsuse[i]), 0.75, na.rm = TRUE), 1)
+        ) %>%
+        ungroup() %>%
+        mutate(
+          out = paste0(med, " [", q1, "-", q3, "]"),
+          out = if_else(out == "NA [NA-NA]", "-", out)
+        ) %>%
+        select(!!sym(xvar), out) %>%
+        pivot_wider(names_from = !!sym(xvar), values_from = out)
 
-  out[1, 1] <- qi
-
-  for (i in seq_along(xvars)) {
-    checkav <- rsdata %>%
-      filter(!is.na(!!sym(qi)) & !is.na(!!sym(xvars[i]))) %>%
-      count(!!sym(qi), !!sym(xvars[i])) %>%
-      count() %>%
-      pull(n)
-
-    if (checkav < 4) {
-      out[(i * 2):(i * 2 + 1)] <- c("-", "-")
+      out <- bind_cols(
+        QI = qivarsuse[i], out,
+        "Crude OR (95% CI), p-value" = "-",
+        "Adjusted OR (95% CI), p-value" = "-"
+      )
     }
-    if (checkav == 4) {
-      mod <- summary(lme4::glmer(formula(paste0(qi, " == 'Yes' ~ ", xvars[i], " + (1 | shf_centre)")),
-        family = "binomial",
-        data = rsdata
-      ))
+    if (cl == "factor") {
+      out <- rsdata %>%
+        filter(!is.na(!!sym(qivarsuse[i])) & !is.na(!!sym(xvar))) %>%
+        group_by(!!sym(xvar), .drop = FALSE) %>%
+        count(!!sym(qivarsuse[i]), .drop = FALSE) %>%
+        mutate(
+          tot = sum(n),
+          p = fn(n / tot * 100, 1),
+          np = paste0(n, "/", tot, " (", p, "%)"),
+          np = if_else(np == "0/0 (NaN%)", "-", np)
+        ) %>%
+        filter(!!sym(qivarsuse[i]) %in% c("Yes", ">= median")) %>%
+        ungroup() %>%
+        select(!!sym(xvar), np) %>%
+        pivot_wider(names_from = !!sym(xvar), values_from = np)
 
-      out[(i * 2):(i * 2 + 1)] <- c(
-        "ref",
-        paste0(
+      if (rsdata %>%
+        filter(!is.na(!!sym(qivarsuse[i])) & !is.na(!!sym(xvar))) %>%
+        count(!!sym(qivarsuse[i]), !!sym(xvar)) %>% nrow() == 4) {
+        mod <- summary(glm(formula(paste0(qivarsuse[i], " == 'Yes' ~ ", xvar)),
+          family = "binomial",
+          data = rsdata
+        ))
+
+        orcrude <- paste0(
           fn(exp(mod$coefficients[2, "Estimate"]), 2),
           " (",
           fn(exp(mod$coefficients[2, "Estimate"] - global_z05 * mod$coefficients[2, "Std. Error"]), 2),
@@ -42,26 +62,71 @@ orfunc <- function(qi) {
           "), ",
           fn(mod$coefficients[2, "Pr(>|z|)"], 3, p = T)
         )
-      )
+
+        modvarsuse <- modvars[!modvars %in% str_split(qivarsmeta %>% filter(qivar == qivarsuse[i]) %>% pull(noadjvars), ", ")[[1]]]
+        modadj <- with(imp, glm(formula(paste0(
+          qivarsuse[i], " == 'Yes' ~ ",
+          xvar, " + ", paste(modvarsuse, collapse = " + ")
+        )),
+        family = binomial(link = "logit")
+        ))
+        smodadj <- summary(pool(modadj))
+
+        oradj <- paste0(
+          fn(exp(smodadj$estimate[2]), 2),
+          " (",
+          fn(exp(smodadj$estimate[2] - global_z05 * smodadj$std.error[2]), 2),
+          "-",
+          fn(exp(smodadj$estimate[2] + global_z05 * smodadj$std.error[2]), 2),
+          "), ",
+          fn(smodadj$p.value[2], dig = 3, p = TRUE)
+        )
+
+        out <- bind_cols(
+          QI = qivarsuse[i], out,
+          "Crude OR (95% CI), p-value" = orcrude,
+          "Adjusted OR (95% CI), p-value" = oradj
+        )
+      } else {
+        out <- bind_cols(
+          QI = qivarsuse[i], out,
+          "Crude OR (95% CI), p-value" = "-",
+          "Adjusted OR (95% CI), p-value" = "-"
+        )
+      }
+    }
+
+    if (i == 1) {
+      outtab <<- out
+    } else {
+      outtab <<- bind_rows(outtab, out)
     }
   }
-  return(out)
+
+  write.xlsx(outtab, paste0("./output/tabs/Likelihood of attainment by ", xvarname, "_", Sys.Date(), ".xlsx"),
+    rowNames = FALSE, overwrite = TRUE
+  )
+
+  default_kable(outtab,
+    font_size = 6,
+    caption = paste0("Likelihood of attainment by ", xvarname),
+    escape = TRUE
+  )
 }
+```
 
-for (j in seq_along(qivars)) {
-  tmpqior <- orfunc(qivars[j])
-  if (j == 1) {
-    qior <<- tmpqior
-  } else {
-    qior <<- rbind(qior, tmpqior)
-  }
-}
+```{r logregef, cache=cacheon, dependson="logregfunc"}
+orfunc("shf_ef_cat", "EF")
+```
 
+```{r logreglocation, cache=cacheon, dependson="logregfunc"}
+orfunc("shf_location", "location")
+```
 
-default_kable(qior,
-  font_size = 6,
-  caption = "Likelihood of attainment",
-  escape = TRUE
-) %>%
-  add_header_above(c(" " = 1, "EF" = 2, "Location" = 2, "Sex" = 2, "Age" = 2))
+```{r logregsex, cache=cacheon, dependson="logregfunc"}
+orfunc("shf_sex", "sex")
+```
+
+```{r logregage, cache=cacheon, dependson="logregfunc"}
+orfunc("shf_age_cat", "age")
 ```

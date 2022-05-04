@@ -17,7 +17,6 @@ tabvars <- c(
   "scb_dispincome_cat",
   
   "shf_durationhf",
-  "sos_priorhfhosp",
   "shf_location",
 
   # clinical factors and lab measurments
@@ -39,7 +38,8 @@ tabvars <- c(
   "shf_bnp",
   "shf_transferrin",
   "shf_ferritin",
-  "shf_qrs", "shf_lbbb", "shf_ekg", 
+  "shf_qrs", "shf_lbbb", 
+  "shf_ekg", 
   
   # comorbs
   "shf_smoking_cat",
@@ -74,13 +74,14 @@ tabvars <- c(
   "shf_nitrate", 
   "sos_ddr_sglt2i",
 
-  "shf_qol"  
-
+  "shf_qol", 
+  "PARTICIPATION_HF_SCHOOL", 
+  "PARTICIPATION_HF_TRAINING", 
+  "FOLLOWUP_UNIT"
 )
 
 
 tabvars_not_in_mod <- c(
-  "sos_priorhfhosp",
   "shf_sos_com_ihd",
   "shf_age_cat",
   "shf_indexyear_cat", 
@@ -94,12 +95,16 @@ tabvars_not_in_mod <- c(
   "shf_transferrin",
   "shf_ferritin",
   "shf_potassium", "shf_sodium", 
-  "shf_qrs", "shf_lbbb", "shf_ekg", 
+  "shf_qrs", "shf_lbbb", 
   "shf_qol", 
   "shf_loopdiuretic", 
   "shf_acei", "shf_arb", "shf_arni", 
   "sos_ddr_sglt2i",
-  "sos_priorhfhosp"
+  "sos_priorhfhosp", 
+  "shf_ekg", 
+  "PARTICIPATION_HF_SCHOOL", 
+  "PARTICIPATION_HF_TRAINING", 
+  "FOLLOWUP_UNIT"
 )
 
 modvars <- tabvars[!(tabvars %in% tabvars_not_in_mod)]

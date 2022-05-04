@@ -1,110 +1,84 @@
 ```{r outtab, cache=cacheon}
 
-qiallvars <- c(qivars, compqivars)
+qivarsuse <- c(qivars, compqicatvars)
 
-survfunc <- function(qi, noadjvars, times, events, ref) {
-  cl <- class(rsdata %>% pull(!!sym(qi)))
-
-  if (cl == "numeric") {
-    nr <- 1
-    lev <- ""
-  }
-  if (cl == "factor") {
-    lev <- levels(rsdata %>% pull(!!sym(qi)))
-    nr <- length(lev) - 1
-  }
-
-  out <- data.frame(matrix(NA, ncol = 7, nrow = nr * 2))
-
-  colnames(out) <- c("QI", "Value", "Model", "30 days", "6 months", "1 year", "long-term fu")
+survfunc <- function(qi, times, events) {
+  out <- data.frame(matrix(NA, ncol = 7, nrow = 1))
+  colnames(out) <- c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
 
   out[1, 1] <- qi
-  out[, 2] <- lev[2:(nr + 1)]
-  out[1, 3] <- "Crude HR (95% CI), p-value"
-  out[(nr + 1), 3] <- "Adjusted HR (95% CI), p-value"
 
   # cox regressions
   for (i in seq_along(times)) {
-    if ((cl == "factor" & nr == 1 & rsdata %>%
+    ev <- rsdata %>%
       filter(!is.na(!!sym(qi))) %>%
-      count(!!sym(events[i]), !!sym(qi)) %>%
-      nrow() == 4) |
-      (cl == "factor" & nr > 1) |
-      cl == "numeric") {
-
-      ## crude
-      mod <- coxph(formula(paste0("Surv(", times[i], ",", events[i], "=='Yes') ~ ", qi, " + frailty(shf_centre)")),
-        data = rsdata
+      group_by(!!sym(qi)) %>%
+      summarise(
+        ev = sum(!!sym(events[i]) == "Yes"),
+        .groups = "rowwise"
       )
 
-      smod <- summary(mod)
-
-      rownos <- str_detect(rownames(smod$conf.int), "qi")
-      rownosp <- str_detect(rownames(smod$coefficients), "qi")
-
-      out[1:nr, 3 + i] <- paste0(
-        fn(smod$conf.int[rownos, "exp(coef)"], 2),
-        " (",
-        fn(smod$conf.int[rownos, "lower .95"], 2),
-        "-",
-        fn(smod$conf.int[rownos, "upper .95"], 2),
-        "), ",
-        fn(smod$coefficients[rownosp, "p"], dig = 3, p = TRUE)
+    s <- rsdata %>%
+      filter(!is.na(!!sym(qi))) %>%
+      group_by(!!sym(qi)) %>%
+      summarise(
+        s = sum(!!sym(times[i]) / 365.25),
+        .groups = "rowwise"
       )
+    r <- pois.exact(x = ev$ev, pt = s$s / 1000)
 
-      ## adjusted
-      modvars2 <- modvars[!modvars %in% noadjvars]
-      amod <- with(imp, coxph(formula(paste0(
-        "Surv(", times[i], ",", events[i], " == 'Yes') ~ ", qi, " + frailty(shf_centre) + ",
-        paste(modvars2, collapse = " + ")
-      ))))
+    out[1, (2 * i + (i - 1))] <- paste0(paste0(
+      ev$ev, ", ",
+      fn(s$s, dig = 0), ", ",
+      fn(r$rate, dig = 0), " (",
+      fn(r$lower, dig = 0), "-",
+      fn(r$upper, dig = 0), ")"
+    ), collapse = "/")
 
-      ## df the number of events minus the regression coefficients.
-      ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
-      asmod <- summary(pool(amod,
-        dfcom =
-          (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
-      ))
+    ## crude
+    mod <- coxph(formula(paste0("Surv(", times[i], ",", events[i], "=='Yes') ~ ", qi, " + frailty(shf_centre)")),
+      data = rsdata
+    )
+    smod <- summary(mod)
 
-      rownos <- str_detect(asmod$term, "qi")
-      out[(nr + 1):(nr * 2), 3 + i] <- paste0(
-        fn(exp(asmod$estimate[rownos]), dig = 2),
-        " (", fn(exp(asmod$estimate[rownos] - global_z05 * asmod$std.error[rownos]), dig = 2),
-        "-", fn(exp(asmod$estimate[rownos] + global_z05 * asmod$std.error[rownos]), dig = 2), "), ",
-        fn(asmod$p.value[rownos], dig = 3, p = TRUE)
-      )
-    } else {
-      out[1:nr, 3 + i] <- "-"
-      out[(nr + 1):(nr * 2), 3 + i] <- "-"
-    }
+    out[1, (1 + 2 * i + (i - 1))] <- paste0(
+      fn(smod$conf.int[1, "exp(coef)"], 2),
+      " (",
+      fn(smod$conf.int[1, "lower .95"], 2),
+      "-",
+      fn(smod$conf.int[1, "upper .95"], 2),
+      "), ",
+      fn(smod$coefficients[1, "p"], dig = 3, p = TRUE)
+    )
+
+    ## adjusted
+    modvarsuse <- modvars[!modvars %in% str_split(qivarsmeta %>% filter(qivar == qi) %>% pull(noadjvars), ", ")[[1]]]
+
+    amod <- with(imp, coxph(formula(paste0(
+      "Surv(", times[i], ",", events[i], " == 'Yes') ~ ", qi, " + frailty(shf_centre) + ",
+      paste(modvarsuse, collapse = " + ")
+    ))))
+
+    ## df the number of events minus the regression coefficients.
+    ## There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+    asmod <- summary(pool(amod,
+      dfcom =
+        (amod$analyses[[1]]$nevent - length(amod$analyses[[1]]$coefficients))
+    ))
+
+    out[1, (2 + 2 * i + (i - 1))] <- paste0(
+      fn(exp(asmod$estimate[1]), dig = 2),
+      " (", fn(exp(asmod$estimate[1] - global_z05 * asmod$std.error[1]), dig = 2),
+      "-", fn(exp(asmod$estimate[1] + global_z05 * asmod$std.error[1]), dig = 2), "), ",
+      fn(asmod$p.value[1], dig = 3, p = TRUE)
+    )
   }
   return(out)
 }
 
-survfunc2 <- function(times2, events2, ref2 = "Yes") {
-  for (j in seq_along(qiallvars)) {
-    noadjvars2 <- ""
-    if (qiallvars[j] == "qi2_1ef") noadjvars2 <- "shf_ef"
-    if (qiallvars[j] == "qi2_3np") noadjvars2 <- "shf_ntprobnp"
-    if (qiallvars[j] == "qi2_4lab") noadjvars2 <- c("shf_anemia", "shf_gfrckdepi")
-    if (qiallvars[j] == "qi3_1bbl") noadjvars2 <- c("shf_ef", "shf_bbl")
-    if (qiallvars[j] == "qi3_2rasarni") noadjvars2 <- c("shf_ef", "shf_rasarni")
-    if (qiallvars[j] == "qi3_3mra") noadjvars2 <- c("shf_ef", "shf_mra")
-    if (qiallvars[j] == "qi3_4loop") noadjvars2 <- c("shf_ef", "shf_diuretic")
-    if (qiallvars[j] %in% c("qi4_5crt", "qi4_5crt_sens")) noadjvars2 <- c("shf_ef", "shf_device")
-    if (qiallvars[j] %in% c("qi4_6icd", "qi4_6icd_sens")) noadjvars2 <- c("shf_ef", "shf_device")
-
-    if (qiallvars[j] == "comp_qi_all") noadjvars2 <- c("shf_ef", "shf_bbl", "shf_rasarni", "shf_mra")
-    if (qiallvars[j] %in% c("comp_qi_opbased2", "comp_qi_opbased2_cat", "comp_qi_opbased2_sens", "comp_qi_opbased2_cat_sens")) {
-      noadjvars2 <- c(
-        "shf_ef", "shf_bbl", "shf_rasarni", "shf_mra",
-        "shf_ntprobnp", "shf_anemia", "shf_gfrckdepi",
-        "shf_device"
-      )
-    }
-    if (qiallvars[j] %in% c("comp_qi_opbased1", "comp_qi_opbased1_cat")) noadjvars2 <- c("shf_ef", "shf_ntprobnp", "shf_anemia", "shf_gfrckdepi")
-
-    tmp <- survfunc(qi = qiallvars[j], noadjvars = noadjvars2, times = times2, events = events2, ref = ref2)
+survfunc2 <- function(times2, events2) {
+  for (j in seq_along(qivarsuse)) {
+    tmp <- survfunc(qi = qivarsuse[j], times = times2, events = events2)
 
     if (j == 1) {
       outtab <<- tmp
@@ -117,56 +91,76 @@ survfunc2 <- function(times2, events2, ref2 = "Yes") {
 
 ```{r outtabdeathcvhosphf, cache=cacheon, dependson="outtab"}
 survfunc2(
-  times2 = c("sos_outtime_hosphf30d", "sos_outtime_hosphf6mo", "sos_outtime_hosphf1yr", "sos_outtime_hosphf"),
-  events2 = c("sos_out_deathcvhosphf30d", "sos_out_deathcvhosphf6mo", "sos_out_deathcvhosphf1yr", "sos_out_deathcvhosphf")
+  times2 = c("sos_outtime_hosphf1yr", "sos_outtime_hosphf"),
+  events2 = c("sos_out_deathcvhosphf1yr", "sos_out_deathcvhosphf")
 )
 
-write.xlsx(outtab, paste0("./output/tabs/out_CV mortality_First HFH", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+write.xlsx(outtab, paste0("./output/tabs/Association between QI and CV mortality/First HFH_", Sys.Date(), ".xlsx"),
+  rowNames = FALSE, overwrite = T
+)
 
-default_kable(outtab,
+footnote(default_kable(outtab,
   font_size = 6,
-  caption = "Association between QI and CV mortality/First HFH"
+  caption = "Association between QI and CV mortality/First HFH",
+  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+) %>%
+  add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
+general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
 )
 ```
 
 ```{r outtabdeathcv, cache=cacheon, dependson="outtab"}
 survfunc2(
-  times2 = c("sos_outtime_death30d", "sos_outtime_death6mo", "sos_outtime_death1yr", "sos_outtime_death"),
-  events2 = c("sos_out_deathcv30d", "sos_out_deathcv6mo", "sos_out_deathcv1yr", "sos_out_deathcv")
+  times2 = c("sos_outtime_death1yr", "sos_outtime_death"),
+  events2 = c("sos_out_deathcv1yr", "sos_out_deathcv")
 )
 
-write.xlsx(outtab, paste0("./output/tabs/out_CV mortality", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+write.xlsx(outtab, paste0("./output/tabs/Association between QI and CV mortality_", Sys.Date(), ".xlsx"),
+  rowNames = FALSE, overwrite = T
+)
 
-default_kable(outtab,
+footnote(default_kable(outtab,
   font_size = 6,
-  caption = "Association between QI and CV mortality"
+  caption = "Association between QI and CV mortality",
+  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+) %>%
+  add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
+general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
 )
 ```
 
 ```{r outtabhosphf, cache=cacheon, dependson="outtab"}
 survfunc2(
-  times2 = c("sos_outtime_hosphf30d", "sos_outtime_hosphf6mo", "sos_outtime_hosphf1yr", "sos_outtime_hosphf"),
-  events2 = c("sos_out_hosphf30d", "sos_out_hosphf6mo", "sos_out_hosphf1yr", "sos_out_hosphf")
+  times2 = c("sos_outtime_hosphf1yr", "sos_outtime_hosphf"),
+  events2 = c("sos_out_hosphf1yr", "sos_out_hosphf")
 )
 
-write.xlsx(outtab, paste0("./output/tabs/out_First HFH", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+write.xlsx(outtab, paste0("./output/tabs/Association between QI and First HFH_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
 
-default_kable(outtab,
+footnote(default_kable(outtab,
   font_size = 6,
-  caption = "Association between QI and First HFH"
+  caption = "Association between QI and First HFH",
+  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+) %>%
+  add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
+general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
 )
 ```
 
 ```{r outtabdeath, cache=cacheon, dependson="outtab"}
 survfunc2(
-  times2 = c("sos_outtime_death30d", "sos_outtime_death6mo", "sos_outtime_death1yr", "sos_outtime_death"),
-  events2 = c("sos_out_death30d", "sos_out_death6mo", "sos_out_death1yr", "sos_out_death")
+  times2 = c("sos_outtime_death1yr", "sos_outtime_death"),
+  events2 = c("sos_out_death1yr", "sos_out_death")
 )
 
-write.xlsx(outtab, paste0("./output/tabs/out_Allcause mortality", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+write.xlsx(outtab, paste0("./output/tabs/Association between QI and All-cause mortality_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
 
-default_kable(outtab,
+footnote(default_kable(outtab,
   font_size = 6,
-  caption = "Association between QI and All-cause mortality"
+  caption = "Association between QI and All-cause mortality",
+  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+) %>%
+  add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
+general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
 )
 ```

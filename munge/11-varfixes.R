@@ -6,10 +6,10 @@ rsdata <- rsdata %>%
       shf_indexyear <= 2019 ~ "2017-2019"
     ),
     shf_age_cat = factor(case_when(
-      shf_age < 70 ~ 1,
-      shf_age >= 70 ~ 2
+      shf_age < 75 ~ 1,
+      shf_age >= 75 ~ 2
     ),
-    labels = c("<70", ">=70"),
+    labels = c("<75", ">=75"),
     levels = 1:2
     ),
 
@@ -57,7 +57,7 @@ rsdata <- rsdata %>%
     ),
     sos_priorhfhosp = factor(case_when(
       is.na(sos_comdur_hosphf) ~ 4,
-      sos_comdur_hosphf < 365 / 2 ~ 1,
+      sos_comdur_hosphf < 365 / 2 | shf_location == "In-patient" ~ 1,
       sos_comdur_hosphf < 365 ~ 2,
       sos_comdur_hosphf >= 365 ~ 3,
     ),
@@ -74,18 +74,7 @@ rsdata <- rsdata %>%
     sos_out_hosphf_cr = create_crevent(sos_out_hosphf, sos_out_death)
   )
 
-rsdata <- cut_surv(rsdata, sos_out_deathcvhosphf, sos_outtime_hosphf, floor(30), rename = "30d", cuttime = FALSE)
-rsdata <- cut_surv(rsdata, sos_out_deathcvhosphf, sos_outtime_hosphf, floor(30.5 * 6), rename = "6mo", cuttime = FALSE)
 rsdata <- cut_surv(rsdata, sos_out_deathcvhosphf, sos_outtime_hosphf, floor(365), rename = "1yr", cuttime = FALSE)
-
-rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(30), rename = "30d", cuttime = TRUE)
-rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(30.5 * 6), rename = "6mo", cuttime = TRUE)
 rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(365), rename = "1yr", cuttime = TRUE)
-
-rsdata <- cut_surv(rsdata, sos_out_deathcv, sos_outtime_death, floor(30), rename = "30d", cuttime = FALSE)
-rsdata <- cut_surv(rsdata, sos_out_deathcv, sos_outtime_death, floor(30.5 * 6), rename = "6mo", cuttime = FALSE)
 rsdata <- cut_surv(rsdata, sos_out_deathcv, sos_outtime_death, floor(365), rename = "1yr", cuttime = FALSE)
-
-rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(30), rename = "30d", cuttime = TRUE)
-rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(30.5 * 6), rename = "6mo", cuttime = TRUE)
 rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(365), rename = "1yr", cuttime = TRUE)

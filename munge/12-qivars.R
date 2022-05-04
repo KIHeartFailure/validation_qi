@@ -64,7 +64,7 @@ rsdata <- rsdata %>%
       shf_device %in% c("CRT", "CRT & ICD") ~ 1,
       TRUE ~ 0
     ),
-    avqi_crt_sens = case_when(
+    sens_avqi_crt = case_when(
       avqi_ef40 == 0 ~ 0,
       is.na(shf_durationhf) | shf_durationhf != ">6mo" ~ 0,
       shf_device %in% c("CRT", "CRT & ICD") ~ 1,
@@ -72,8 +72,8 @@ rsdata <- rsdata %>%
       shf_qrs >= 150 & shf_lbbb == "Yes" ~ 1,
       TRUE ~ 0
     ),
-    qi4_5crt_sens = case_when(
-      is.na(shf_device) | avqi_crt_sens == 0 ~ NA_real_,
+    sens_qi4_5crt = case_when(
+      is.na(shf_device) | sens_avqi_crt == 0 ~ NA_real_,
       shf_device %in% c("CRT", "CRT & ICD") ~ 1,
       TRUE ~ 0
     ),
@@ -88,13 +88,13 @@ rsdata <- rsdata %>%
       shf_device %in% c("ICD", "CRT & ICD") ~ 1,
       TRUE ~ 0
     ),
-    avqi_icd_sens = case_when(
+    sens_avqi_icd = case_when(
       avqi_ef40 == 0 ~ 0,
       is.na(shf_durationhf) | shf_durationhf != ">6mo" ~ 0,
       TRUE ~ 1
     ),
-    qi4_6icd_sens = case_when(
-      is.na(shf_device) | avqi_icd_sens == 0 ~ NA_real_,
+    sens_qi4_6icd = case_when(
+      is.na(shf_device) | sens_avqi_icd == 0 ~ NA_real_,
       shf_device %in% c("ICD", "CRT & ICD") ~ 1,
       TRUE ~ 0
     ),
@@ -103,12 +103,12 @@ rsdata <- rsdata %>%
 
 rsdata <- rsdata %>%
   mutate(compqi_opbased1_num = rowSums(select(
-    ., qi2_1ef, qi2_2ecg, qi2_3np, qi2_4lab, qi2_5rehab, qi2_6follow
+    ., qi2_2ecg, qi2_3np, qi2_4lab, qi2_5rehab, qi2_6follow
   ), na.rm = T)) %>%
   mutate(
     compqi_opbased1_den =
       rowSums(!is.na(select(
-        ., qi2_1ef, qi2_2ecg,
+        ., qi2_2ecg,
         qi2_3np, qi2_4lab, qi2_5rehab, qi2_6follow
       )))
   ) %>%
@@ -120,60 +120,78 @@ rsdata <- rsdata %>%
     ., qi2_2ecg, qi2_3np, qi2_4lab, qi2_5rehab, qi2_6follow,
     qi3_1bbl, qi3_2rasarni, qi3_3mra, qi4_5crt, qi4_6icd
   )))) %>%
-  mutate(compqi_opbased2_num_sens = rowSums(select(
-    ., qi2_2ecg, qi2_3np, qi2_4lab, qi2_5rehab, qi2_6follow,
-    qi3_1bbl, qi3_2rasarni, qi3_3mra, qi4_5crt_sens, qi4_6icd_sens
-  ), na.rm = T)) %>%
-  mutate(compqi_opbased2_den_sens = rowSums(!is.na(select(
-    ., qi2_2ecg, qi2_3np, qi2_4lab, qi2_5rehab, qi2_6follow,
-    qi3_1bbl, qi3_2rasarni, qi3_3mra, qi4_5crt_sens, qi4_6icd_sens
-  )))) %>%
   mutate(compqi_all_num = rowSums(select(
     ., qi3_1bbl, qi3_2rasarni, qi3_3mra
   ))) %>%
   mutate(
-    comp_qi_opbased1 = compqi_opbased1_num / compqi_opbased1_den,
-    comp_qi_opbased1_cat = factor(case_when(
-      comp_qi_opbased1 < .7 ~ 1,
-      comp_qi_opbased1 < .8 ~ 2,
-      comp_qi_opbased1 < .9 ~ 3,
-      comp_qi_opbased1 >= .9 ~ 4
-    ),
-    levels = 1:4, labels = c("ob1 <70%", "ob1 70-<80%", "ob1 80-<90", "ob1 90-100%")
+    comp_qi_opbased1 = if_else(shf_ef_cat == ">=40%" & !is.na(shf_ef_cat),
+      compqi_opbased1_num / compqi_opbased1_den * 100,
+      NA_real_
     ),
     comp_qi_opbased2 = if_else(avqi_ef40 == 1,
-      compqi_opbased2_num / compqi_opbased2_den,
+      compqi_opbased2_num / compqi_opbased2_den * 100,
       NA_real_
     ),
-    comp_qi_opbased2_cat = factor(case_when(
-      comp_qi_opbased2 < .7 ~ 1,
-      comp_qi_opbased2 < .8 ~ 2,
-      comp_qi_opbased2 < .9 ~ 3,
-      comp_qi_opbased2 >= .9 ~ 4
-    ),
-    levels = 1:4, labels = c("ob2 <70%", "ob2 70-<80%", "ob2 80-<90", "ob2 90-100%")
-    ),
-    comp_qi_opbased2_sens = if_else(avqi_ef40 == 1,
-      compqi_opbased2_num_sens / compqi_opbased2_den_sens,
-      NA_real_
-    ),
-    comp_qi_opbased2_cat_sens = factor(case_when(
-      comp_qi_opbased2_sens < .7 ~ 1,
-      comp_qi_opbased2_sens < .8 ~ 2,
-      comp_qi_opbased2_sens < .9 ~ 3,
-      comp_qi_opbased2_sens >= .9 ~ 4
-    ),
-    levels = 1:4, labels = c("ob2sens <70%", "ob2sens 70-<80%", "ob2sens 80-<90", "ob2sens 90-100%")
-    ),
-    comp_qi_all = factor(if_else(avqi_ef40 == 1,
+    comp_qi_all = ynfac(if_else(avqi_ef40 == 1,
       floor(compqi_all_num / 3), NA_real_
-    ),
-    levels = 0:1, labels = c("No", "Yes")
+    ))
+  ) %>%
+  select(-ends_with("_den"), -ends_with("_num"))
+
+medob1 <- median(rsdata$comp_qi_opbased1, na.rm = T)
+medob2 <- median(rsdata$comp_qi_opbased2, na.rm = T)
+
+rsdata <- rsdata %>%
+  mutate(
+    comp_qi_opbased1_abovemedian = ynfac(case_when(
+      comp_qi_opbased1 < medob1 ~ 0,
+      comp_qi_opbased1 >= medob1 ~ 1
+    )),
+    comp_qi_opbased2_abovemedian = ynfac(case_when(
+      comp_qi_opbased2 < medob2 ~ 0,
+      comp_qi_opbased2 >= medob2 ~ 1
+    )
     )
   )
 
 rsdata <- rsdata %>%
-  mutate_at(vars(starts_with("qi")), ynfac)
+  mutate_at(vars(starts_with("qi")), ynfac) %>%
+  mutate_at(vars(starts_with("sens_qi")), ynfac)
 
 qivars <- colnames(rsdata)[str_detect(colnames(rsdata), "^qi\\d")]
+qisensvars <- colnames(rsdata)[str_detect(colnames(rsdata), "^sens_qi\\d")]
 compqivars <- colnames(rsdata)[str_detect(colnames(rsdata), "^comp_qi")]
+compqicatvars <- c("comp_qi_all", "comp_qi_opbased1_abovemedian", "comp_qi_opbased2_abovemedian")
+
+qivarsmeta <- tibble(
+  qivar = c(qivars, qisensvars, compqivars),
+  qiname = qivar
+)
+
+qivarsmeta <- qivarsmeta %>%
+  mutate(
+    qiname = str_replace(qiname, "sens_", "Sensitivity "),
+    qiname = str_replace(qiname, "comp_qi_", ""),
+    qiname = str_replace(qiname, "_abovemedian", ""),
+    qiname = str_replace(qiname, "qi\\d_\\d", ""),
+    noadjvars = case_when(
+      qivar == "qi2_1ef" ~ "shf_ef",
+      qivar == "qi2_3np" ~ "shf_ntprobnp",
+      qivar == "qi2_4lab" ~ "shf_anemia, shf_gfrckdepi",
+      qivar == "qi2_5rehab" ~ "shf_location",
+      qivar == "qi2_6follow" ~ "shf_location",
+      qivar == "qi3_1bbl" ~ "shf_ef, shf_bbl",
+      qivar == "qi3_2rasarni" ~ "shf_ef, shf_rasarni",
+      qivar == "qi3_3mra" ~ "shf_ef, shf_mra",
+      qivar == "qi3_4loop" ~ "shf_ef, shf_diuretic",
+      qivar %in% c("qi4_5crt", "sens_qi4_5crt") ~ "shf_ef, shf_device, shf_durationhf",
+      qivar %in% c("qi4_6icd", "sens_qi4_6icd") ~ "shf_ef, shf_device, shf_durationhf",
+      qivar == "comp_qi_all" ~ "shf_ef, shf_bbl, shf_rasarni, shf_mra",
+      qivar %in% c("comp_qi_opbased2", "comp_qi_opbased2_abovemedian") ~
+      "shf_ef, shf_bbl, shf_rasarni, shf_mra, shf_ntprobnp, shf_anemia, 
+      shf_gfrckdepi, shf_device",
+      qivar %in% c("comp_qi_opbased1", "comp_qi_opbased1_abovemedian") ~ 
+        "shf_ef, shf_ntprobnp, shf_anemia, shf_gfrckdepi",
+      TRUE ~ NA_character_
+    )
+  )

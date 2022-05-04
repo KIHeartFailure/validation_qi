@@ -1,62 +1,46 @@
-```{r boxplotfunc, cache=cacheon}
+```{r boxplotfunc, cache=cacheon, fig.cap="Distribution of hospitals performance (opportunity based scores distribution for >= median)", fig.width=9, fig.height=6}
 
-boxfunc <- function(notvars) {
-  qivarsuse <- qivars[!qivars %in% notvars]
+qivarsuse <- c(qivars, compqicatvars)
 
-  for (i in seq_along(qivarsuse)) {
-    tmp <- rsdata %>%
-      filter(!is.na(!!sym(qivarsuse[i]))) %>%
-      group_by(shf_centre) %>%
-      count(!!sym(qivarsuse[i]), .drop = F) %>%
-      mutate(
-        tot = sum(n),
-        percent = as.numeric(fn(n / tot * 100, 0))
-      ) %>%
-      ungroup() %>%
-      filter(!!sym(qivarsuse[i]) == "Yes") %>%
-      filter(tot > 10) %>%
-      select(shf_centre, percent) %>%
-      mutate(
-        qivar = str_replace(qivarsuse[i], "qi\\d_\\d", ""),
-        qivar = str_replace(qivar, "_sens", ""),
-        qinum = i
-      )
+for (i in seq_along(qivarsuse)) {
+  tmp <- rsdata %>%
+    filter(!is.na(!!sym(qivarsuse[i]))) %>%
+    group_by(shf_centre) %>%
+    count(!!sym(qivarsuse[i]), .drop = F) %>%
+    mutate(
+      tot = sum(n),
+      percent = as.numeric(fn(n / tot * 100, 0))
+    ) %>%
+    ungroup() %>%
+    filter(!!sym(qivarsuse[i]) %in% c("Yes", ">= median")) %>%
+    filter(tot > 10) %>%
+    select(shf_centre, percent) %>%
+    mutate(
+      qivar = qivarsuse[i],
+      qinum = i
+    )
 
-    if (i == 1) {
-      qidata <<- tmp
-    }
-    if (i > 1) {
-      qidata <<- bind_rows(qidata, tmp)
-    }
+  if (i == 1) {
+    qidata <<- tmp
   }
-
-  qidata$qivar <- forcats::fct_reorder(qidata$qivar, qidata$qinum)
-
-  cexmy <- 1.5
-  # c(bottom, left, top, right)
-  par(mar = c(5, 4, 0, 0) + 0.1)
-
-  b <- boxplot(percent ~ qivar,
-    data = qidata, col = global_colsblue[5],
-    ylab = "Distributation of hospital performance (%)", xlab = "", axes = FALSE, cex.lab = cexmy
-  )
-  axis(1, at = 1:13, b$names, tick = TRUE, cex.axis = cexmy, gap.axis = -10000000, las = 2)
-  axis(2, cex.axis = cexmy, las = 2)
-  box(bty = "l")
-
-  abline(h = 50, col = "grey", lty = 2, lwd = 1)
-  abline(h = 70, col = "grey", lty = 2, lwd = 1)
-  abline(h = 80, col = "grey", lty = 2, lwd = 1)
-  abline(h = 90, col = "grey", lty = 2, lwd = 1)
+  if (i > 1) {
+    qidata <<- bind_rows(qidata, tmp)
+  }
 }
-```
 
-```{r boxplot, cache=cacheon, dependson="boxplotfunc", fig.cap="Distribution of hospitals performance", fig.width=9, fig.height=6}
+qidata <- left_join(qidata, qivarsmeta %>% select(-noadjvars), by = "qivar")
 
-boxfunc(notvars = c("qi4_5crt_sens", "qi4_6icd_sens"))
-```
+qidata$qiname <- forcats::fct_reorder(qidata$qiname, qidata$qinum)
 
-```{r boxplotsens, cache=cacheon, dependson="boxplotfunc", fig.cap="Distribution of hospitals performance - CRT/ICD sensitivity analysis", fig.width=9, fig.height=6}
+cexmy <- 1.5
+# c(bottom, left, top, right)
+par(mar = c(6.5, 4, 0, 0) + 0.1)
 
-boxfunc(notvars = c("qi4_5crt", "qi4_6icd"))
+b <- boxplot(percent ~ qiname,
+  data = qidata, col = global_colsblue[5],
+  ylab = "Distributation of hospital performance (%)", xlab = "", axes = FALSE, cex.lab = cexmy
+)
+axis(1, at = 1:16, b$names, tick = TRUE, cex.axis = cexmy, gap.axis = -10000000, las = 2)
+axis(2, cex.axis = cexmy, las = 2)
+box(bty = "l")
 ```

@@ -1,11 +1,11 @@
 ```{r tabqi, cache=cacheon}
 
-tab1 <- print(CreateTableOne(
-  vars = c(qivars, compqivars),
+tabqi <- print(CreateTableOne(
+  vars = c(qivars, qisensvars, compqivars),
   data = rsdata,
 ),
 smd = FALSE,
-missing = TRUE,
+missing = FALSE,
 printToggle = FALSE,
 nonnormal = compqivars,
 catDigits = 1,
@@ -13,140 +13,115 @@ contDigits = 1,
 noSpaces = TRUE,
 explain = FALSE
 )
-tab1 <- as_tibble(cbind(var = rownames(tab1), tab1)) %>%
+
+tabqi <- as_tibble(cbind(var = rownames(tabqi), tabqi)) %>%
   mutate(
     hosp = NA,
-    misav = NA
-  ) %>%
-  select(var, Missing, misav, Overall, hosp)
+    nel = NA
+  )
+
+tabqicenter <- function(var) {
+  cl <- class(rsdata %>% pull(!!sym(var)))
+
+  if (cl == "numeric") {
+    ds <- rsdata %>%
+      group_by(shf_centre) %>%
+      summarise(
+        ds = median(!!sym(var), na.rm = TRUE),
+        n = n()
+      ) %>%
+      ungroup() %>%
+      filter(n >= 10)
 
 
-tmp <- lapply(c(qivars, compqivars), tab1center)
-
-addnmissapp <- function(qi) {
-  avvar <- "avqi_all"
-
-  if (qi %in% c("qi2_5rehab", "qi2_6follow")) avvar <- "avqi_rehabfollow"
-  if (qi %in% c(
-    "qi3_1bbl", "qi3_2rasarni", "qi3_3mra",
-    "comp_qi_opbased2", "comp_qi_opbased2_cat", "comp_qi_opbased2_sens",
-    "comp_qi_opbased2_cat_sens", "comp_qi_all"
-  )) {
-    avvar <- "avqi_ef40"
+    out <- ds %>%
+      summarise(
+        med = fn(median(ds, na.rm = T), dig = 1),
+        q1 = fn(quantile(ds, probs = 0.25, na.rm = T), dig = 1),
+        q3 = fn(quantile(ds, probs = 0.75, na.rm = T), dig = 1)
+      ) %>%
+      mutate(out = paste0(med, " [", q1, "-", q3, "]")) %>%
+      pull(out)
+    tabqi[tabqi$var == var, "hosp"] <<- out
   }
-  if (qi %in% c("qi3_4loop")) avvar <- "avqi_loop"
-  if (qi %in% c("qi4_5crt")) avvar <- "avqi_crt"
-  if (qi %in% c("qi4_5crt_sens")) avvar <- "avqi_crt_sens"
-  if (qi %in% c("qi4_6icd")) avvar <- "avqi_icd"
-  if (qi %in% c("qi4_6icd_sens")) avvar <- "avqi_icd_sens"
 
-  mis <- rsdata %>%
-    filter(!!sym(avvar) == 1) %>%
-    mutate(isna = factor(if_else(is.na(!!sym(qi)), 1, 0), levels = 0:1, labels = c("No", "Yes"))) %>%
-    count(isna, .drop = F) %>%
-    mutate(per = fn(n / sum(n) * 100, 1)) %>%
-    filter(isna == "Yes") %>%
-    pull(per)
+  if (cl %in% c("factor", "character")) {
+    if (cl == "character") {
+      ds <- rsdata %>%
+        mutate(!!sym(var) := factor(!!sym(var)))
+    }
 
-  tab1[tab1$var == qi, "misav"] <<- mis
+    ds <- rsdata %>%
+      filter(!is.na(!!sym(var))) %>%
+      group_by(shf_centre) %>%
+      count(!!sym(var), .drop = FALSE) %>%
+      mutate(
+        ntot = sum(n),
+        ds = n / ntot * 100
+      ) %>%
+      ungroup() %>%
+      filter(ntot >= 10)
+
+    lev <- levels(rsdata %>% pull(!!sym(var)))
+
+    ds <- ds %>%
+      filter(!!sym(var) == lev[2])
+
+    out <- ds %>%
+      summarise(
+        med = fn(median(ds, na.rm = T), dig = 1),
+        q1 = fn(quantile(ds, probs = 0.25, na.rm = T), dig = 1),
+        q3 = fn(quantile(ds, probs = 0.75, na.rm = T), dig = 1)
+      ) %>%
+      mutate(out = paste0(med, " [", q1, "-", q3, "]")) %>%
+      pull(out)
+    tabqi[tabqi$var == paste0(var, " = ", lev[2]), "hosp"] <<- out
+  }
 }
 
-tab1 <- tab1 %>%
-  # remove = Yes
-  mutate(across(everything(), str_replace_all, fixed(" = Yes"), "")) %>%
-  mutate(across(everything(), str_replace_all, fixed("NA [NA, NA]"), "-")) %>%
-  mutate(across(everything(), str_replace_all, fixed("0 (NaN)"), "-"))
+tmp <- lapply(c(qivars, qisensvars, compqivars), tabqicenter)
 
-tmp <- lapply(c(qivars, compqivars), addnmissapp)
+addnmissapp <- function(var) {
+  cl <- class(rsdata %>% pull(!!sym(var)))
 
-tab1 <- tab1 %>%
+  ds <- rsdata %>%
+    filter(!is.na(!!sym(var))) %>%
+    count()
+
+  if (cl %in% c("factor")) {
+    lev <- levels(rsdata %>% pull(!!sym(var)))
+    tabqi[tabqi$var %in% paste0(var, " = ", lev[2]), "nel"] <<- ds
+  }
+  if (cl %in% c("numeric")) {
+    lev <- levels(rsdata %>% pull(!!sym(var)))
+    tabqi[tabqi$var %in% var, "nel"] <<- ds
+  }
+}
+
+tmp <- lapply(c(qivars, qisensvars, compqivars), addnmissapp)
+
+tabqi <- tabqi %>%
   mutate(
-    # clean up opbased values
-    var = str_replace_all(var, "ob\\dsens ", ""),
-    var = str_replace_all(var, "ob\\d ", ""),
-
+    var = str_remove(var, " = "),
+    var = str_remove(var, "Yes"),
     # so no probs
     var = sanitize_text(var),
 
     # space in Latex output (fix this other way?)
     var = sub("  ", ". ", var)
-  )
+  ) %>%
+  select(var, nel, Overall, hosp) %>%
+  filter(var != "n")
 
-write.xlsx(tab1, paste0("./output/tabs/tabqi_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+colnames(tabqi) <- sanitize_text(c("QI", "Denominator", "n (%)", "Hospital variation median [q1-q3]"))
 
-colnames(tab1) <- sanitize_text(c("QI", "NA/Missing (%) total N", "Missing (%) applicable N", "Overall", "Hospital variation median [q1-q3]"))
+write.xlsx(tabqi, paste0("./output/tabs/Quality Indicators_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
 
-footnote(default_kable(tab1,
+footnote(default_kable(tabqi,
   font_size = 6,
   caption = "Quality Indicators",
   escape = FALSE
 ),
-general = "The hospital variation is the median [q1-q3] of the median (continuous variables) or proportion (categorical variables)."
+general = c("The hospital variation is the median [q1-q3] of the median (continuous variables) or proportion (categorical variables).")
 )
-```
-
-```{r tabqibyvars, cache=cacheon}
-
-tab1func <- function(stratavar) {
-  tab1 <- print(CreateTableOne(
-    vars = c(qivars, compqivars),
-    data = rsdata,
-    strata = stratavar,
-    test = FALSE
-  ),
-  smd = FALSE,
-  missing = FALSE,
-  printToggle = FALSE,
-  nonnormal = compqivars,
-  catDigits = 1,
-  contDigits = 1,
-  noSpaces = TRUE,
-  explain = FALSE
-  )
-  tab1 <- as_tibble(cbind(QI = rownames(tab1), tab1))
-}
-
-
-tab1ef <- tab1func(stratavar = "shf_ef_cat")
-tab1sex <- tab1func(stratavar = "shf_sex")
-tab1age <- tab1func(stratavar = "shf_age_cat")
-tab1location <- tab1func(stratavar = "shf_location")
-
-tab1 <- Reduce(
-  function(...) {
-    full_join(...,
-      by = "QI"
-    )
-  },
-  list(tab1ef, tab1location, tab1sex, tab1age)
-)
-
-tab1 <- tab1 %>%
-  # remove = Yes
-  mutate(across(everything(), str_replace_all, fixed(" = Yes"), "")) %>%
-  mutate(across(everything(), str_replace_all, fixed("NA [NA, NA]"), "-")) %>%
-  mutate(across(everything(), str_replace_all, fixed("0 (NaN)"), "-")) %>%
-  mutate(
-    # clean up opbased values
-    QI = str_replace_all(QI, "ob\\dsens ", ""),
-    QI = str_replace_all(QI, "ob\\d ", ""),
-
-    # so no probs
-    QI = sanitize_text(QI),
-
-    # space in Latex output (fix this other way?)
-    QI = sub("  ", ". ", QI)
-  )
-
-
-write.xlsx(tab1, paste0("./output/tabs/tabqi_stratified_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
-
-colnames(tab1) <- sanitize_text(colnames(tab1))
-
-default_kable(tab1,
-  font_size = 6,
-  caption = "Quality Indicators by LVEF, location, sex and age",
-  escape = FALSE
-) %>%
-  add_header_above(c(" " = 1, "LVEF" = 2, "Location" = 2, "Sex" = 2, "Age" = 2))
 ```

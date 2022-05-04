@@ -11,68 +11,121 @@ nonnormal = tabvars,
 catDigits = 1,
 contDigits = 1,
 noSpaces = TRUE,
-explain = FALSE
+explain = FALSE,
+showAllLevels = TRUE
 )
 tab1 <- as_tibble(cbind(var = rownames(tab1), tab1)) %>%
-  select(var, Missing, Overall) %>%
-  mutate(hosp = NA)
+  select(var, level, Missing, Overall)
 
 
-tmp <- lapply(tabvars, tab1center)
+hosptab <- tibble(var = NA, level = NA, hosp = NA)
+for (i in seq_along(tabvars)) {
+  cl <- class(rsdata %>% pull(!!sym(tabvars[i])))
+
+  if (cl == "numeric") {
+    ds <- rsdata %>%
+      group_by(shf_centre) %>%
+      summarise(
+        ds = median(!!sym(tabvars[i]), na.rm = TRUE),
+        n = n()
+      ) %>%
+      ungroup() %>%
+      filter(n >= 10)
+
+    out <- ds %>%
+      summarise(
+        med = fn(median(ds, na.rm = T), dig = 1),
+        q1 = fn(quantile(ds, probs = 0.25, na.rm = T), dig = 1),
+        q3 = fn(quantile(ds, probs = 0.75, na.rm = T), dig = 1)
+      ) %>%
+      mutate(hosp = paste0(med, " [", q1, "-", q3, "]")) %>%
+      mutate(
+        level = NA,
+        var = if_else(row_number() == 1, tabvars[i], NA_character_)
+      ) %>%
+      select(var, level, hosp)
+  }
+
+  if (cl %in% c("factor", "character")) {
+    if (cl == "character") {
+      ds <- rsdata %>%
+        mutate(!!sym(tabvars[i]) := factor(!!sym(tabvars[i])))
+    }
+
+    ds <- rsdata %>%
+      filter(!is.na(!!sym(tabvars[i]))) %>%
+      group_by(shf_centre) %>%
+      count(!!sym(tabvars[i]), .drop = FALSE) %>%
+      mutate(
+        ntot = sum(n),
+        ds = n / ntot * 100
+      ) %>%
+      ungroup() %>%
+      filter(ntot >= 10)
+
+    out <- ds %>%
+      group_by(!!sym(tabvars[i])) %>%
+      summarise(
+        med = fn(median(ds, na.rm = T), dig = 1),
+        q1 = fn(quantile(ds, probs = 0.25, na.rm = T), dig = 1),
+        q3 = fn(quantile(ds, probs = 0.75, na.rm = T), dig = 1)
+      ) %>%
+      mutate(hosp = paste0(med, " [", q1, "-", q3, "]")) %>%
+      rename(level = !!sym(tabvars[i])) %>%
+      mutate(var = if_else(row_number() == 1, tabvars[i], NA_character_)) %>%
+      select(var, level, hosp)
+  }
+  hosptab <- bind_rows(hosptab, out)
+}
+
+tab1 <- bind_cols(tab1, hosptab %>% select(hosp))
 
 tab1 <- tab1 %>%
-  # remove = Yes
-  mutate(across(everything(), str_replace_all, fixed(" = Yes"), "")) %>%
   # to get labs and units in place
   mutate(
-    var_tmp = str_split(var, " = ", simplify = TRUE)[, 1],
-    val_tmp = str_split(var, " = ", simplify = TRUE)[, 2],
     # if recoding or categorizing will still get org label
-    var_tmp2 = str_replace_all(var_tmp, "(_cat2|_cat)", ""),
+    vartmp = str_replace_all(var, "(_cat2|_cat)", ""),
     # if shf/sos combination  will still get org label
-    var_tmp2 = str_replace_all(var_tmp2, "shf_sos_com_", "sos_com_")
+    vartmp = str_replace_all(vartmp, "shf_sos_com_", "sos_com_")
   )
 
 tab1 <- left_join(tab1,
   meta.variables.Sheet.1 %>%
     select(variable, label, unit),
-  by = c("var_tmp2" = "variable")
+  by = c("vartmp" = "variable")
 ) %>%
   mutate(
-    Variable = coalesce(label, var_tmp),
+    Variable = coalesce(label, var),
     Variable = if_else(!is.na(unit),
       paste0(Variable, " (", unit, ")"),
-      Variable
-    ),
-    Variable = if_else(val_tmp != "",
-      paste0(Variable, " ", val_tmp),
       Variable
     )
   )
 
-write.xlsx(tab1 %>% select(Variable, Missing:hosp), paste0("./output/tabs/tab1_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+write.xlsx(tab1 %>% select(Variable, level:hosp), paste0("./output/tabs/Baseline characteristics_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
 
 # footnotes
 tab1 <- tab1 %>%
   mutate(
-    footnote1 = if_else(str_detect(var_tmp, "^shf_"), footnote_marker_symbol(1), ""),
-    footnote2 = if_else(str_detect(var_tmp, "sos_"), footnote_marker_symbol(2), ""),
-    footnote3 = if_else(str_detect(var_tmp, "scb_"), footnote_marker_symbol(3), ""),
-    footnote4 = if_else(var_tmp %in% modvars, footnote_marker_symbol(4), "")
+    footnote1 = if_else(str_detect(var, "^shf_") |
+      var %in% c("PARTICIPATION_HF_SCHOOL", "PARTICIPATION_HF_TRAINING", "FOLLOWUP_UNIT"),
+    footnote_marker_symbol(1), ""
+    ),
+    footnote2 = if_else(str_detect(var, "sos_"), footnote_marker_symbol(2), ""),
+    footnote3 = if_else(str_detect(var, "scb_"), footnote_marker_symbol(3), ""),
+    footnote4 = if_else(var %in% modvars, footnote_marker_symbol(4), "")
   ) %>%
   unite(footnote, starts_with("footnote"), sep = "") %>%
   mutate(
     # so no probs
     Variable = sanitize_text(Variable),
     Variable = paste0(Variable, footnote),
-
-    # space in Latex output (fix this other way?)
-    Variable = sub("  ", ". ", Variable)
+    level = sanitize_text(level)
   ) %>%
-  select(Variable, Missing:hosp)
+  select(Variable, level:hosp)
 
 ## fix in order to use escape = TRUE
-colnames(tab1) <- sanitize_text(c("Variable", "Missing (%)", "Overall", "Hospital variation median [q1-q3]"))
+colnames(tab1) <- sanitize_text(c("Variable", "Level", "Missing (%)", "Overall", "Hospital variation median [q1-q3]"))
 
 footnote(
   default_kable(tab1,
@@ -110,7 +163,8 @@ tab1func <- function(stratavar) {
   catDigits = 1,
   contDigits = 1,
   noSpaces = TRUE,
-  explain = FALSE
+  explain = FALSE,
+  showAllLevels = TRUE
   )
   tab1 <- as_tibble(cbind(var = rownames(tab1), tab1)) %>%
     select(-test)
@@ -121,72 +175,65 @@ tab1sex <- tab1func(stratavar = "shf_sex")
 tab1age <- tab1func(stratavar = "shf_age_cat")
 tab1location <- tab1func(stratavar = "shf_location")
 
-tab1 <- Reduce(
-  function(...) {
-    full_join(...,
-      by = "var"
-    )
-  },
-  list(tab1ef, tab1location, tab1sex, tab1age)
+tab1 <- bind_cols(
+  tab1ef,
+  tab1location %>% select(-var, -level),
+  tab1sex %>% select(-var, -level),
+  tab1age %>% select(-var, -level)
 )
 
-
 tab1 <- tab1 %>%
-  # remove = Yes
-  mutate(across(everything(), str_replace_all, fixed(" = Yes"), "")) %>%
   # to get labs and units in place
   mutate(
-    var_tmp = str_split(var, " = ", simplify = TRUE)[, 1],
-    val_tmp = str_split(var, " = ", simplify = TRUE)[, 2],
     # if recoding or categorizing will still get org label
-    var_tmp2 = str_replace_all(var_tmp, "(_cat2|_cat)", ""),
+    vartmp = str_replace_all(var, "(_cat2|_cat)", ""),
     # if shf/sos combination  will still get org label
-    var_tmp2 = str_replace_all(var_tmp2, "shf_sos_com_", "sos_com_")
+    vartmp = str_replace_all(vartmp, "shf_sos_com_", "sos_com_")
   )
 
 tab1 <- left_join(tab1,
   meta.variables.Sheet.1 %>%
     select(variable, label, unit),
-  by = c("var_tmp2" = "variable")
+  by = c("vartmp" = "variable")
 ) %>%
   mutate(
-    Variable = coalesce(label, var_tmp),
+    Variable = coalesce(label, var),
     Variable = if_else(!is.na(unit),
       paste0(Variable, " (", unit, ")"),
-      Variable
-    ),
-    Variable = if_else(val_tmp != "",
-      paste0(Variable, " ", val_tmp),
       Variable
     )
   )
 
-write.xlsx(tab1 %>% select(Variable, 2:13), paste0("./output/tabs/tab1_stratified_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
+write.xlsx(tab1 %>% select(Variable, level:p...14),
+  paste0("./output/tabs/Baseline characteristics by LVEF, location, sex and age_", Sys.Date(), ".xlsx"),
+  rowNames = FALSE, overwrite = TRUE
+)
 
 # footnotes
+
 tab1 <- tab1 %>%
   mutate(
-    footnote1 = if_else(str_detect(var_tmp, "^shf_"), footnote_marker_symbol(1), ""),
-    footnote2 = if_else(str_detect(var_tmp, "sos_"), footnote_marker_symbol(2), ""),
-    footnote3 = if_else(str_detect(var_tmp, "scb_"), footnote_marker_symbol(3), ""),
-    footnote4 = if_else(var_tmp %in% modvars, footnote_marker_symbol(4), "")
+    footnote1 = if_else(str_detect(var, "^shf_") |
+      var %in% c("PARTICIPATION_HF_SCHOOL", "PARTICIPATION_HF_TRAINING", "FOLLOWUP_UNIT"),
+    footnote_marker_symbol(1), ""
+    ),
+    footnote2 = if_else(str_detect(var, "sos_"), footnote_marker_symbol(2), ""),
+    footnote3 = if_else(str_detect(var, "scb_"), footnote_marker_symbol(3), ""),
+    footnote4 = if_else(var %in% modvars, footnote_marker_symbol(4), "")
   ) %>%
   unite(footnote, starts_with("footnote"), sep = "") %>%
   mutate(
     # so no probs
     Variable = sanitize_text(Variable),
     Variable = paste0(Variable, footnote),
-
-    # space in Latex output (fix this other way?)
-    Variable = sub("  ", ". ", Variable)
+    level = sanitize_text(level)
   ) %>%
-  select(Variable, 2:13)
+  select(Variable, level:p...14) %>%
+  rename(Level = level)
 
 ## fix in order to use escape = TRUE
 colnams <- colnames(tab1)
-colnams <- str_replace(colnams, "Missing", "Missing (%)")
-colnams <- str_replace(colnams, "^p", "p-value")
-colnams <- str_replace_all(colnams, ".y|.x", "")
+colnams[str_detect(colnams, "^p")] <- "p-value"
 colnames(tab1) <- sanitize_text(colnams)
 
 footnote(
@@ -197,7 +244,7 @@ footnote(
     escape = FALSE
   ) %>%
     landscape() %>%
-    add_header_above(c(" " = 1, "LVEF" = 3, "Location" = 3, "Sex" = 3, "Age" = 3)),
+    add_header_above(c(" " = 1, " " = 1, "LVEF" = 3, "Location" = 3, "Sex" = 3, "Age" = 3)),
   general = c(
     "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Kruskal-Wallis test."
   ),

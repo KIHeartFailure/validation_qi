@@ -98,11 +98,11 @@ default_kable(metalm, caption = "Medications from DDR")
 
 ```
 
-Note that the EF QI is removed from the opportunity based score no 2.
+Note that the EF QI is removed from the opportunity based scores.
 
 ### Sensitivity analysis
 
-For the CRT and ICD QI a sensitivity analysis was performed throughout including patients with EF <40% instead of <30% and 
+For the CRT and ICD QI a sensitivity analysis was performed including patients with EF <40% instead of <30% and 
 not applying the ECG (for CRT) and NYHA class criteria. 
 
 # Statistical analysis 
@@ -120,7 +120,7 @@ All analyses on centre variation include only centres => 10 patients for the res
 ## Missing data
 
 Missing data was imputed with multiple imputation (n = 10) using mice [@mice] 
-for the multivariable Cox regression models. 
+for the multivariable logistic and Cox regression models. 
 Variables included in the model are indicated in 
 Table \ref{tab:tab1}. All-cause mortality was included as the Nelson-Aalen estimator. 
 The QI were not imputed and based on non-imputed raw data. 
@@ -139,8 +139,9 @@ The QI were not imputed and based on non-imputed raw data.
 
 \clearpage
 
-The likelihood of attainment is assessed using a generalized linear mixed-effects model
-(GLMM) with a logit link and a random effect for centre. The OR are unadjusted.
+The likelihood of attainment is assessed using a logistic regression, crude and adjusted for the variables indicated in 
+Table \ref{tab:tab1}. (the generalized linear mixed-effects model
+(GLMM) with a logit link and a random effect for centre just took too long for this amount of models, observations, variables and imputations)
 
 ```{r, child = "../src/logreg.Rmd"}
 

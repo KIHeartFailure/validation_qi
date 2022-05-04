@@ -8,7 +8,8 @@ rsdata <- rsdata %>%
     contains("scb_"),
     censdtm,
     contains("sos_"),
-    contains("qi")
+    contains("qi"),
+    PARTICIPATION_HF_SCHOOL, PARTICIPATION_HF_TRAINING, FOLLOWUP_UNIT
   )
 
 

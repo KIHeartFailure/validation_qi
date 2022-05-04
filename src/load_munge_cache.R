@@ -22,7 +22,10 @@ ProjectTemplate::cache("metalm")
 ProjectTemplate::cache("tabvars")
 ProjectTemplate::cache("modvars")
 ProjectTemplate::cache("qivars")
+ProjectTemplate::cache("qisensvars")
 ProjectTemplate::cache("compqivars")
+ProjectTemplate::cache("compqicatvars")
+ProjectTemplate::cache("qivarsmeta")
 
 ProjectTemplate::cache("rsdata")
 
