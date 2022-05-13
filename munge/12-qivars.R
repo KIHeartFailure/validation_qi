@@ -128,31 +128,23 @@ rsdata <- rsdata %>%
       compqi_opbased1_num / compqi_opbased1_den * 100,
       NA_real_
     ),
+    comp_qi_opbased1_aboveequal50 = ynfac(case_when(
+      comp_qi_opbased1 < 50 ~ 0,
+      comp_qi_opbased1 >= 50 ~ 1
+    )),
     comp_qi_opbased2 = if_else(avqi_ef40 == 1,
       compqi_opbased2_num / compqi_opbased2_den * 100,
       NA_real_
     ),
+    comp_qi_opbased2_aboveequal50 = ynfac(case_when(
+      comp_qi_opbased2 < 50 ~ 0,
+      comp_qi_opbased2 >= 50 ~ 1
+    )),
     comp_qi_all = ynfac(if_else(avqi_ef40 == 1,
       floor(compqi_all_num / 3), NA_real_
     ))
   ) %>%
   select(-ends_with("_den"), -ends_with("_num"))
-
-medob1 <- median(rsdata$comp_qi_opbased1, na.rm = T)
-medob2 <- median(rsdata$comp_qi_opbased2, na.rm = T)
-
-rsdata <- rsdata %>%
-  mutate(
-    comp_qi_opbased1_abovemedian = ynfac(case_when(
-      comp_qi_opbased1 < medob1 ~ 0,
-      comp_qi_opbased1 >= medob1 ~ 1
-    )),
-    comp_qi_opbased2_abovemedian = ynfac(case_when(
-      comp_qi_opbased2 < medob2 ~ 0,
-      comp_qi_opbased2 >= medob2 ~ 1
-    )
-    )
-  )
 
 rsdata <- rsdata %>%
   mutate_at(vars(starts_with("qi")), ynfac) %>%
@@ -161,7 +153,7 @@ rsdata <- rsdata %>%
 qivars <- colnames(rsdata)[str_detect(colnames(rsdata), "^qi\\d")]
 qisensvars <- colnames(rsdata)[str_detect(colnames(rsdata), "^sens_qi\\d")]
 compqivars <- colnames(rsdata)[str_detect(colnames(rsdata), "^comp_qi")]
-compqicatvars <- c("comp_qi_all", "comp_qi_opbased1_abovemedian", "comp_qi_opbased2_abovemedian")
+compqicatvars <- c("comp_qi_all", "comp_qi_opbased1_aboveequal50", "comp_qi_opbased2_aboveequal50")
 
 qivarsmeta <- tibble(
   qivar = c(qivars, qisensvars, compqivars),
@@ -172,7 +164,7 @@ qivarsmeta <- qivarsmeta %>%
   mutate(
     qiname = str_replace(qiname, "sens_", "Sensitivity "),
     qiname = str_replace(qiname, "comp_qi_", ""),
-    qiname = str_replace(qiname, "_abovemedian", ""),
+    qiname = str_replace(qiname, "_aboveequal50", ""),
     qiname = str_replace(qiname, "qi\\d_\\d", ""),
     noadjvars = case_when(
       qivar == "qi2_1ef" ~ "shf_ef",
@@ -187,11 +179,11 @@ qivarsmeta <- qivarsmeta %>%
       qivar %in% c("qi4_5crt", "sens_qi4_5crt") ~ "shf_ef, shf_device, shf_durationhf",
       qivar %in% c("qi4_6icd", "sens_qi4_6icd") ~ "shf_ef, shf_device, shf_durationhf",
       qivar == "comp_qi_all" ~ "shf_ef, shf_bbl, shf_rasarni, shf_mra",
-      qivar %in% c("comp_qi_opbased2", "comp_qi_opbased2_abovemedian") ~
-      "shf_ef, shf_bbl, shf_rasarni, shf_mra, shf_ntprobnp, shf_anemia, 
+      qivar %in% c("comp_qi_opbased2", "comp_qi_opbased2_aboveequal50") ~
+      "shf_ef, shf_bbl, shf_rasarni, shf_mra, shf_ntprobnp, shf_anemia,
       shf_gfrckdepi, shf_device",
-      qivar %in% c("comp_qi_opbased1", "comp_qi_opbased1_abovemedian") ~ 
-        "shf_ef, shf_ntprobnp, shf_anemia, shf_gfrckdepi",
+      qivar %in% c("comp_qi_opbased1", "comp_qi_opbased1_aboveequal50") ~
+      "shf_ef, shf_ntprobnp, shf_anemia, shf_gfrckdepi",
       TRUE ~ NA_character_
     )
   )

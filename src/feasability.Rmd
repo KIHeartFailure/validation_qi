@@ -113,7 +113,7 @@ tabqi <- tabqi %>%
   select(var, nel, Overall, hosp) %>%
   filter(var != "n")
 
-colnames(tabqi) <- sanitize_text(c("QI", "Denominator", "n (%)", "Hospital variation median [q1-q3]"))
+colnames(tabqi) <- sanitize_text(c("QI", "Denominator", "n (%)/median [q1-q3]", "Hospital variation median [q1-q3]"))
 
 write.xlsx(tabqi, paste0("./output/tabs/Quality Indicators_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = TRUE)
 

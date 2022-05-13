@@ -18,7 +18,7 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
     ylab = eventname,
     xscale = 365,
     yscale = 100,
-    col = global_colsblue[c(2, 5)],
+    col = global_colsblue[c(5, 2)],
     mark.time = FALSE,
     bty = "n",
     xlim = c(0, endtime * 365),
@@ -27,7 +27,7 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
     cex.lab = cexmy,
     axes = F,
     lwd = 3,
-    lty = 1:4,
+    lty = c(2, 1),
     xaxs = "i", yaxs = "i"
   )
 
@@ -167,6 +167,15 @@ qinames <- qivarsmeta %>%
   pull(qiname)
 ```
 
+```{r death, cache = cacheon, dependson="km", fig.cap = "AC mortality", fig.show='hold', out.width="25%", out.height="25%", fig.subcap=qinames, fig.ncol=4}
+
+time2 <- "sos_outtime_death"
+event2 <- "sos_out_death"
+eventname2 <- "All-cause mortality (%)"
+
+kmfunc2()
+```             
+
 ```{r deathcvhosphf, cache = cacheon, dependson="km", fig.cap = "CV mortality/First HFH", fig.show='hold', out.width="25%", out.height="25%", fig.subcap=qinames, fig.ncol=4}
 
 time2 <- "sos_outtime_hosphf"
@@ -190,15 +199,6 @@ kmfunc2()
 time2 <- "sos_outtime_hosphf"
 event2 <- "sos_out_hosphf"
 eventname2 <- "First HFH (%)"
-
-kmfunc2()
-```             
-
-```{r death, cache = cacheon, dependson="km", fig.cap = "AC mortality", fig.show='hold', out.width="25%", out.height="25%", fig.subcap=qinames, fig.ncol=4}
-
-time2 <- "sos_outtime_death"
-event2 <- "sos_out_death"
-eventname2 <- "All-cause mortality (%)"
 
 kmfunc2()
 ```             

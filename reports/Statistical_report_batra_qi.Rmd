@@ -163,10 +163,11 @@ Table \ref{tab:tab1}. (the generalized linear mixed-effects model
 
 The following outcomes are considered: 
 
+- All-cause mortality (primary outcome)
+- All-cause mortality at 1 year
 - Composite of CV mortality/First Heart failure hospitalization (HFH)
 - CV mortality
 - First Heart failure hospitalization (HFH)
-- All-cause mortality
 
 Data were censored at 2019-12-31, death (for the outcome HFH) or emigration from Sweden. 
 

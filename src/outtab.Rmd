@@ -89,6 +89,24 @@ survfunc2 <- function(times2, events2) {
 }
 ```
 
+```{r outtabdeath, cache=cacheon, dependson="outtab"}
+survfunc2(
+  times2 = c("sos_outtime_death1yr", "sos_outtime_death"),
+  events2 = c("sos_out_death1yr", "sos_out_death")
+)
+
+write.xlsx(outtab, paste0("./output/tabs/Association between QI and All-cause mortality_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
+
+footnote(default_kable(outtab,
+  font_size = 6,
+  caption = "Association between QI and All-cause mortality",
+  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+) %>%
+  add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
+general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
+)
+```
+
 ```{r outtabdeathcvhosphf, cache=cacheon, dependson="outtab"}
 survfunc2(
   times2 = c("sos_outtime_hosphf1yr", "sos_outtime_hosphf"),
@@ -140,24 +158,6 @@ write.xlsx(outtab, paste0("./output/tabs/Association between QI and First HFH_",
 footnote(default_kable(outtab,
   font_size = 6,
   caption = "Association between QI and First HFH",
-  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
-) %>%
-  add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
-general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
-)
-```
-
-```{r outtabdeath, cache=cacheon, dependson="outtab"}
-survfunc2(
-  times2 = c("sos_outtime_death1yr", "sos_outtime_death"),
-  events2 = c("sos_out_death1yr", "sos_out_death")
-)
-
-write.xlsx(outtab, paste0("./output/tabs/Association between QI and All-cause mortality_", Sys.Date(), ".xlsx"), rowNames = FALSE, overwrite = T)
-
-footnote(default_kable(outtab,
-  font_size = 6,
-  caption = "Association between QI and All-cause mortality",
   col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
 ) %>%
   add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
