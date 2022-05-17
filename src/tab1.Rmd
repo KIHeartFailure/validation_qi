@@ -133,8 +133,7 @@ footnote(
     caption = "Baseline characteristics",
     longtable = TRUE,
     escape = FALSE
-  ) %>%
-    landscape(),
+  ),
   general = c(
     "Categorical variables are presented with n (%) and continuous variables with median [q1-q3].",
     "The hospital variation is the median [q1-q3] of the median (continuous variables) or proportion (categorical variables)."
@@ -143,7 +142,7 @@ footnote(
     "Source: SwedeHF",
     "Source: NPR",
     "Source: SCB",
-    "Included in imputation model and adjusted for in cox regression models."
+    "Included in imputation model and adjusted for in cox and logistic regression models."
   )
 )
 ```
@@ -252,7 +251,7 @@ footnote(
     "Source: SwedeHF",
     "Source: NPR",
     "Source: SCB",
-    "Included in imputation model and adjusted for in cox regression models."
+    "Included in imputation model and adjusted for in cox and logistic regression models."
   )
 )
 ```

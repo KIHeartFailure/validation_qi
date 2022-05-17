@@ -17,7 +17,9 @@ urlcolor: blue
 linkcolor: black
 header-includes:
    - \usepackage{subfig}
-   - \usepackage{draftwatermark}
+   - \usepackage{pdflscape}
+   - \newcommand{\blandscape}{\begin{landscape}}
+   - \newcommand{\elandscape}{\end{landscape}}
 ---
 
 \newpage 
@@ -161,10 +163,9 @@ Table \ref{tab:tab1}. (the generalized linear mixed-effects model
 
 ## Outcome analysis
 
-The following outcomes are considered: 
+The following outcomes are considered at 1 year and for whole follow-up period: 
 
 - All-cause mortality (primary outcome)
-- All-cause mortality at 1 year
 - Composite of CV mortality/First Heart failure hospitalization (HFH)
 - CV mortality
 - First Heart failure hospitalization (HFH)

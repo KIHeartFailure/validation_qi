@@ -1,8 +1,12 @@
-```{r boxplotfunc, cache=cacheon, fig.cap="Distribution of hospitals performance (opportunity based scores distribution for >= median)", fig.width=9, fig.height=6}
+```{r boxplotfunc, cache=cacheon, fig.cap="Distribution of hospitals performance", fig.width=9, fig.height=6}
 
-qivarsuse <- c(qivars, compqicatvars)
+qivarsuse <- qivarsmeta %>%
+  filter(qivartype %in% c("qi", "compqicat")) %>%
+  pull(qivar)
 
 for (i in seq_along(qivarsuse)) {
+  lev <- levels(rsdata %>% pull(!!sym(qivarsuse[i])))
+
   tmp <- rsdata %>%
     filter(!is.na(!!sym(qivarsuse[i]))) %>%
     group_by(shf_centre) %>%
@@ -12,7 +16,7 @@ for (i in seq_along(qivarsuse)) {
       percent = as.numeric(fn(n / tot * 100, 0))
     ) %>%
     ungroup() %>%
-    filter(!!sym(qivarsuse[i]) %in% c("Yes", ">= median")) %>%
+    filter(!!sym(qivarsuse[i]) == lev[2]) %>%
     filter(tot > 10) %>%
     select(shf_centre, percent) %>%
     mutate(
@@ -30,11 +34,11 @@ for (i in seq_along(qivarsuse)) {
 
 qidata <- left_join(qidata, qivarsmeta %>% select(-noadjvars), by = "qivar")
 
-qidata$qiname <- forcats::fct_reorder(qidata$qiname, qidata$qinum)
+qidata$qiname <- forcats::fct_reorder(qidata$qishortname, qidata$qinum)
 
-cexmy <- 1.5
+cexmy <- 1.2
 # c(bottom, left, top, right)
-par(mar = c(6.5, 4, 0, 0) + 0.1)
+par(mar = c(11.5, 4, 0, 0) + 0.1)
 
 b <- boxplot(percent ~ qiname,
   data = qidata, col = global_colsblue[5],

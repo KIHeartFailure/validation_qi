@@ -1,12 +1,12 @@
 ```{r outtab, cache=cacheon}
 
-qivarsuse <- c(qivars, compqicatvars)
-
-survfunc <- function(qi, times, events) {
+survfunc <- function(qi, qiname, times, events) {
   out <- data.frame(matrix(NA, ncol = 7, nrow = 1))
-  colnames(out) <- c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+  colnames(out) <- c("QI", rep(c("Incidence", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
 
-  out[1, 1] <- qi
+  out[1, 1] <- qiname
+
+  lev <- levels(rsdata %>% pull(!!sym(qi)))
 
   # cox regressions
   for (i in seq_along(times)) {
@@ -27,13 +27,13 @@ survfunc <- function(qi, times, events) {
       )
     r <- pois.exact(x = ev$ev, pt = s$s / 1000)
 
-    out[1, (2 * i + (i - 1))] <- paste0(paste0(
+    out[1, (2 * i + (i - 1))] <- paste0(rev(paste0(
       ev$ev, ", ",
       fn(s$s, dig = 0), ", ",
       fn(r$rate, dig = 0), " (",
       fn(r$lower, dig = 0), "-",
       fn(r$upper, dig = 0), ")"
-    ), collapse = "/")
+    )), collapse = " vs. ")
 
     ## crude
     mod <- coxph(formula(paste0("Surv(", times[i], ",", events[i], "=='Yes') ~ ", qi, " + frailty(shf_centre)")),
@@ -76,9 +76,12 @@ survfunc <- function(qi, times, events) {
   return(out)
 }
 
+qivarsuse <- qivarsmeta %>%
+  filter(qivartype %in% c("qi", "compqicat"))
+
 survfunc2 <- function(times2, events2) {
-  for (j in seq_along(qivarsuse)) {
-    tmp <- survfunc(qi = qivarsuse[j], times = times2, events = events2)
+  for (j in seq_along(qivarsuse$qivar)) {
+    tmp <- survfunc(qi = qivarsuse$qivar[j], qiname = qivarsuse$qilongname[j], times = times2, events = events2)
 
     if (j == 1) {
       outtab <<- tmp
@@ -100,7 +103,7 @@ write.xlsx(outtab, paste0("./output/tabs/Association between QI and All-cause mo
 footnote(default_kable(outtab,
   font_size = 6,
   caption = "Association between QI and All-cause mortality",
-  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+  col.names = c("QI", rep(c("Incidence", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
 ) %>%
   add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
 general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
@@ -120,7 +123,7 @@ write.xlsx(outtab, paste0("./output/tabs/Association between QI and CV mortality
 footnote(default_kable(outtab,
   font_size = 6,
   caption = "Association between QI and CV mortality/First HFH",
-  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+  col.names = c("QI", rep(c("Incidence", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
 ) %>%
   add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
 general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
@@ -140,7 +143,7 @@ write.xlsx(outtab, paste0("./output/tabs/Association between QI and CV mortality
 footnote(default_kable(outtab,
   font_size = 6,
   caption = "Association between QI and CV mortality",
-  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+  col.names = c("QI", rep(c("Incidence", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
 ) %>%
   add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
 general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"
@@ -158,7 +161,7 @@ write.xlsx(outtab, paste0("./output/tabs/Association between QI and First HFH_",
 footnote(default_kable(outtab,
   font_size = 6,
   caption = "Association between QI and First HFH",
-  col.names = c("QI", rep(c("Incidence No/Yes", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
+  col.names = c("QI", rep(c("Incidence", "Crude HR (95% CI), p-value", "Adjusted HR (95% CI), p-value"), 2))
 ) %>%
   add_header_above(c(" " = 1, "1 year fu" = 3, "Long-term fu" = 3)),
 general = "Incidence = No events, sum py, incidence rate/1000py (95% CI)"

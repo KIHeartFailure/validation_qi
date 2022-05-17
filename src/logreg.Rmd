@@ -1,6 +1,6 @@
 ```{r logregfunc, cache=cacheon}
 
-qivarsuse <- c(qivars, qisensvars, compqivars)
+qivarsuse <- qivarsmeta %>% pull(qivar)
 
 orfunc <- function(xvar, xvarname) {
   for (i in seq_along(qivarsuse)) {
@@ -30,6 +30,8 @@ orfunc <- function(xvar, xvarname) {
       )
     }
     if (cl == "factor") {
+      lev <- levels(rsdata %>% pull(!!sym(qivarsuse[i])))
+
       out <- rsdata %>%
         filter(!is.na(!!sym(qivarsuse[i])) & !is.na(!!sym(xvar))) %>%
         group_by(!!sym(xvar), .drop = FALSE) %>%
@@ -40,7 +42,7 @@ orfunc <- function(xvar, xvarname) {
           np = paste0(n, "/", tot, " (", p, "%)"),
           np = if_else(np == "0/0 (NaN%)", "-", np)
         ) %>%
-        filter(!!sym(qivarsuse[i]) %in% c("Yes", ">= median")) %>%
+        filter(!!sym(qivarsuse[i]) == lev[2]) %>%
         ungroup() %>%
         select(!!sym(xvar), np) %>%
         pivot_wider(names_from = !!sym(xvar), values_from = np)
@@ -48,7 +50,7 @@ orfunc <- function(xvar, xvarname) {
       if (rsdata %>%
         filter(!is.na(!!sym(qivarsuse[i])) & !is.na(!!sym(xvar))) %>%
         count(!!sym(qivarsuse[i]), !!sym(xvar)) %>% nrow() == 4) {
-        mod <- summary(glm(formula(paste0(qivarsuse[i], " == 'Yes' ~ ", xvar)),
+        mod <- summary(glm(formula(paste0(qivarsuse[i], " == '", lev[2], "' ~ ", xvar)),
           family = "binomial",
           data = rsdata
         ))
@@ -65,7 +67,7 @@ orfunc <- function(xvar, xvarname) {
 
         modvarsuse <- modvars[!modvars %in% str_split(qivarsmeta %>% filter(qivar == qivarsuse[i]) %>% pull(noadjvars), ", ")[[1]]]
         modadj <- with(imp, glm(formula(paste0(
-          qivarsuse[i], " == 'Yes' ~ ",
+          qivarsuse[i], " == '", lev[2], "' ~ ",
           xvar, " + ", paste(modvarsuse, collapse = " + ")
         )),
         family = binomial(link = "logit")
@@ -103,20 +105,33 @@ orfunc <- function(xvar, xvarname) {
     }
   }
 
+  outtab <- left_join(outtab,
+    qivarsmeta %>% select(qivar, qilongname),
+    by = c("QI" = "qivar")
+  ) %>%
+    select(-QI) %>%
+    select(qilongname, everything()) %>%
+    rename(QI = qilongname)
+
   write.xlsx(outtab, paste0("./output/tabs/Likelihood of attainment by ", xvarname, "_", Sys.Date(), ".xlsx"),
     rowNames = FALSE, overwrite = TRUE
   )
 
+  outtab <- outtab %>%
+    mutate(across(everything(), sanitize_text))
+
+  colnames(outtab) <- sanitize_text(colnames(outtab))
+
   default_kable(outtab,
     font_size = 6,
-    caption = paste0("Likelihood of attainment by ", xvarname),
-    escape = TRUE
+    caption = sanitize_text(paste0("Likelihood of attainment by ", xvarname)),
+    escape = FALSE
   )
 }
 ```
 
 ```{r logregef, cache=cacheon, dependson="logregfunc"}
-orfunc("shf_ef_cat", "EF")
+orfunc(xvar = "shf_ef_cat", xvarname = "EF")
 ```
 
 ```{r logreglocation, cache=cacheon, dependson="logregfunc"}

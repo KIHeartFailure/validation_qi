@@ -1,21 +1,22 @@
 ```{r corrfunc, cache=cacheon, fig.cap="Correlation of all QI pairs"}
 
 corrdata <- rsdata %>%
-  select(!!!syms(qivars)) %>%
+  select(!!!syms(qivarsmeta %>% filter(qivartype %in% c("qi")) %>% pull(qivar))) %>%
   mutate_all(as.numeric)
 
 names(corrdata) <- qivarsmeta %>%
   filter(qivar %in% names(corrdata)) %>%
-  pull(qiname)
+  pull(qishortname)
 
 cor <- rcorr(as.matrix(corrdata), type = c("spearman"))
 
+# c(bottom, left, top, right)
 corrplot(cor$r,
-  method = c("color"), type = "upper", tl.pos = "n", na.label = "square", na.label.col = "grey", diag = FALSE,
-  p.mat = cor$P, insig = "label_sig", sig.level = c(0.05, 0.01, 0.001), pch.cex = 0.8, cl.pos = "r", mar = c(1, 2, 0, 0) + 0.1
+  method = c("color"), type = "upper", tl.pos = "n", na.label = "square", na.label.col = "grey", diag = FALSE, cl.cex = 0.8,
+  p.mat = cor$P, insig = "label_sig", sig.level = c(0.05, 0.01, 0.001), pch.cex = 0.8, cl.pos = "r", mar = c(1, 9, 0, 0) + 0.1
 )
 corrplot(cor$r,
-  add = TRUE, type = "lower", method = "number",
-  tl.pos = "d", cl.pos = "n", col = "black", na.label = "-", tl.col = "red", number.cex = 0.9
+  add = TRUE, type = "lower", method = "number", diag = FALSE,
+  tl.pos = "l", cl.pos = "n", col = "black", na.label = "-", tl.col = "black", number.cex = 0.7, tl.cex = 0.8
 )
 ```

@@ -128,44 +128,82 @@ rsdata <- rsdata %>%
       compqi_opbased1_num / compqi_opbased1_den * 100,
       NA_real_
     ),
-    comp_qi_opbased1_aboveequal50 = ynfac(case_when(
+    comp_qi_opbased1_cat = qifac(case_when(
       comp_qi_opbased1 < 50 ~ 0,
       comp_qi_opbased1 >= 50 ~ 1
-    )),
+    ), type = "ob"),
     comp_qi_opbased2 = if_else(avqi_ef40 == 1,
       compqi_opbased2_num / compqi_opbased2_den * 100,
       NA_real_
     ),
-    comp_qi_opbased2_aboveequal50 = ynfac(case_when(
+    comp_qi_opbased2_cat = qifac(case_when(
       comp_qi_opbased2 < 50 ~ 0,
       comp_qi_opbased2 >= 50 ~ 1
-    )),
-    comp_qi_all = ynfac(if_else(avqi_ef40 == 1,
+    ), type = "ob"),
+    comp_qi_all = qifac(if_else(avqi_ef40 == 1,
       floor(compqi_all_num / 3), NA_real_
-    ))
+    ), type = "a")
   ) %>%
   select(-ends_with("_den"), -ends_with("_num"))
 
 rsdata <- rsdata %>%
-  mutate_at(vars(starts_with("qi")), ynfac) %>%
-  mutate_at(vars(starts_with("sens_qi")), ynfac)
+  mutate_at(vars(starts_with("qi")), qifac) %>%
+  mutate_at(vars(starts_with("sens_qi")), qifac)
 
-qivars <- colnames(rsdata)[str_detect(colnames(rsdata), "^qi\\d")]
-qisensvars <- colnames(rsdata)[str_detect(colnames(rsdata), "^sens_qi\\d")]
-compqivars <- colnames(rsdata)[str_detect(colnames(rsdata), "^comp_qi")]
-compqicatvars <- c("comp_qi_all", "comp_qi_opbased1_aboveequal50", "comp_qi_opbased2_aboveequal50")
+qivars <- colnames(rsdata)[str_detect(colnames(rsdata), "^(qi\\d|comp_qi|sens_qi)")]
 
 qivarsmeta <- tibble(
-  qivar = c(qivars, qisensvars, compqivars),
-  qiname = qivar
+  qivar = qivars
 )
 
 qivarsmeta <- qivarsmeta %>%
   mutate(
-    qiname = str_replace(qiname, "sens_", "Sensitivity "),
-    qiname = str_replace(qiname, "comp_qi_", ""),
-    qiname = str_replace(qiname, "_aboveequal50", ""),
-    qiname = str_replace(qiname, "qi\\d_\\d", ""),
+    qishortname = case_when(
+      qivar == "qi2_1ef" ~ "HF type documented",
+      qivar == "qi2_2ecg" ~ "ECG documented",
+      qivar == "qi2_3np" ~ "NPs measured",
+      qivar == "qi2_4lab" ~ "Blood tests documented",
+      qivar == "qi2_5rehab" ~ "Cardiac rehabilitation",
+      qivar == "qi2_6follow" ~ "Follow-up review",
+      qivar == "qi3_1bbl" ~ "Beta-blocker",
+      qivar == "qi3_2rasarni" ~ "ACEi/ARB/ARNI",
+      qivar == "qi3_3mra" ~ "MRA",
+      qivar == "qi3_4loop" ~ "Loop diuretics",
+      qivar == "qi4_5crt" ~ "CRT",
+      qivar == "sens_qi4_5crt" ~ "CRT (sensitivity)",
+      qivar == "qi4_6icd" ~ "ICD",
+      qivar == "sens_qi4_6icd" ~ "ICD (sensitivity)",
+      qivar == "qi5_1qol" ~ "HRQoL assessment",
+      qivar == "comp_qi_opbased1" ~ "OB: LVEF >40%",
+      qivar == "comp_qi_opbased1_cat" ~ "OB: LVEF >40%",
+      qivar == "comp_qi_opbased2" ~ "OB: LVEF <=40%",
+      qivar == "comp_qi_opbased2_cat" ~ "OB: LVEF <=40%",
+      qivar == "comp_qi_all" ~ "AON: LVEF <=40%",
+      TRUE ~ NA_character_
+    ),
+    qilongname = case_when(
+      qivar == "qi2_1ef" ~ "Main (2.1): Documentation of HF type",
+      qivar == "qi2_2ecg" ~ "Main (2.2): Documentation of ECG",
+      qivar == "qi2_3np" ~ "Main (2.3): NPs measured",
+      qivar == "qi2_4lab" ~ "Main (2.4): Blood tests documented",
+      qivar == "qi2_5rehab" ~ "Main (2.5): Cardiac rehabilitation referral",
+      qivar == "qi2_6follow" ~ "Secondary (2.1): Follow-up review",
+      qivar == "qi3_1bbl" ~ "Main (3.1): Beta-blocker",
+      qivar == "qi3_2rasarni" ~ "Main (3.2): ACE inhibitor, ARB or ARNI",
+      qivar == "qi3_3mra" ~ "Main (3.3): MRA",
+      qivar == "qi3_4loop" ~ "Main (3.5): Loop diuretic therapy",
+      qivar == "qi4_5crt" ~ "Secondary (4.1): CRT",
+      qivar == "sens_qi4_5crt" ~ "Secondary (4.1): CRT (sensitivity)",
+      qivar == "qi4_6icd" ~ "Secondary (4.2): ICD",
+      qivar == "sens_qi4_6icd" ~ "Secondary (4.2): ICD (sensitivity)",
+      qivar == "qi5_1qol" ~ "Secondary (5.1): HRQoL assessment",
+      qivar == "comp_qi_opbased1" ~ "Opportunity-based: LVEF >40%",
+      qivar == "comp_qi_opbased1_cat" ~ "Opportunity-based above 50%: LVEF >40%",
+      qivar == "comp_qi_opbased2" ~ "Opportunity-based: LVEF <=40%",
+      qivar == "comp_qi_opbased2_cat" ~ "Opportunity-based above 50%: LVEF <=40%",
+      qivar == "comp_qi_all" ~ "All-or-none: LVEF <=40%",
+      TRUE ~ NA_character_
+    ),
     noadjvars = case_when(
       qivar == "qi2_1ef" ~ "shf_ef",
       qivar == "qi2_3np" ~ "shf_ntprobnp",
@@ -179,11 +217,17 @@ qivarsmeta <- qivarsmeta %>%
       qivar %in% c("qi4_5crt", "sens_qi4_5crt") ~ "shf_ef, shf_device, shf_durationhf",
       qivar %in% c("qi4_6icd", "sens_qi4_6icd") ~ "shf_ef, shf_device, shf_durationhf",
       qivar == "comp_qi_all" ~ "shf_ef, shf_bbl, shf_rasarni, shf_mra",
-      qivar %in% c("comp_qi_opbased2", "comp_qi_opbased2_aboveequal50") ~
+      qivar %in% c("comp_qi_opbased2", "comp_qi_opbased2_cat") ~
       "shf_ef, shf_bbl, shf_rasarni, shf_mra, shf_ntprobnp, shf_anemia,
       shf_gfrckdepi, shf_device",
-      qivar %in% c("comp_qi_opbased1", "comp_qi_opbased1_aboveequal50") ~
+      qivar %in% c("comp_qi_opbased1", "comp_qi_opbased1_cat") ~
       "shf_ef, shf_ntprobnp, shf_anemia, shf_gfrckdepi",
       TRUE ~ NA_character_
+    ),
+    qivartype = case_when(
+      qivar %in% c("comp_qi_opbased1_cat", "comp_qi_opbased2_cat", "comp_qi_all") ~ "compqicat",
+      qivar %in% c("comp_qi_opbased1", "comp_qi_opbased2") ~ "compqicont",
+      qivar %in% c("sens_qi4_5crt", "sens_qi4_6icd") ~ "qisens",
+      TRUE ~ "qi"
     )
   )

@@ -1,13 +1,13 @@
 ```{r tabqi, cache=cacheon}
 
 tabqi <- print(CreateTableOne(
-  vars = c(qivars, qisensvars, compqivars),
+  vars = qivarsmeta %>% pull(qivar),
   data = rsdata,
 ),
 smd = FALSE,
 missing = FALSE,
 printToggle = FALSE,
-nonnormal = compqivars,
+nonnormal = qivarsmeta %>% pull(qivar),
 catDigits = 1,
 contDigits = 1,
 noSpaces = TRUE,
@@ -79,7 +79,7 @@ tabqicenter <- function(var) {
   }
 }
 
-tmp <- lapply(c(qivars, qisensvars, compqivars), tabqicenter)
+tmp <- lapply(qivarsmeta %>% pull(qivar), tabqicenter)
 
 addnmissapp <- function(var) {
   cl <- class(rsdata %>% pull(!!sym(var)))
@@ -98,20 +98,22 @@ addnmissapp <- function(var) {
   }
 }
 
-tmp <- lapply(c(qivars, qisensvars, compqivars), addnmissapp)
+tmp <- lapply(qivarsmeta %>% pull(qivar), addnmissapp)
 
 tabqi <- tabqi %>%
   mutate(
     var = str_remove(var, " = "),
-    var = str_remove(var, "Yes"),
-    # so no probs
-    var = sanitize_text(var),
+    var = str_remove(var, "Yes|Fulfilled|>=50% fulfilled|All fulfilled")
+  )
 
-    # space in Latex output (fix this other way?)
-    var = sub("  ", ". ", var)
+tabqi <- left_join(tabqi %>% filter(var != "n"),
+  qivarsmeta %>% select(qivar, qilongname),
+  by = c("var" = "qivar")
+) %>%
+  mutate( # so no probs
+    qilongname = sanitize_text(qilongname)
   ) %>%
-  select(var, nel, Overall, hosp) %>%
-  filter(var != "n")
+  select(qilongname, nel, Overall, hosp)
 
 colnames(tabqi) <- sanitize_text(c("QI", "Denominator", "n (%)/median [q1-q3]", "Hospital variation median [q1-q3]"))
 

@@ -1,6 +1,6 @@
 ```{r km, cache=cacheon}
 
-kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace = 4) {
+kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace = 2) {
   cexmy <- 1.2
   endtime <- 6
 
@@ -11,7 +11,7 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
   levs <- levels(rsdata %>% pull(!!sym(qi)))
 
   # c(bottom, left, top, right)
-  par(mar = c(6.5, 7, 1, 1) + 0.1)
+  par(mar = c(6.5, 8, 1, 1) + 0.1)
 
   plots <- plot(fits,
     fun = "event",
@@ -47,9 +47,9 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
 
   nrisk <- summary(fits, seq(0, endtime, 1) * 365, extend = T)
 
-  mtext("No. at risk", side = 1, line = 3.5, at = -540, adj = 0, cex = cexmy, font = 2)
-  mtext(levs[1], side = 1, line = 4.5, at = -540, adj = 0, cex = cexmy)
-  mtext(levs[2], side = 1, line = 5.5, at = -540, adj = 0, cex = cexmy)
+  mtext("No. at risk", side = 1, line = 3.5, at = -670, adj = 0, cex = cexmy, font = 2)
+  mtext(levs[1], side = 1, line = 4.5, at = -670, adj = 0, cex = cexmy)
+  mtext(levs[2], side = 1, line = 5.5, at = -670, adj = 0, cex = cexmy)
 
   axis(1,
     at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=", levs[1])],
@@ -61,110 +61,25 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
   )
 }
 
-kmfunc2 <- function() {
-  kmfunc(
-    qi = qivars[1],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[2],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[3],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[4],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[5],
-    time = time2,
-    event = event2,
-    eventname = eventname2,
-    xplace = 2
-  )
-  kmfunc(
-    qi = qivars[6],
-    time = time2,
-    event = event2,
-    eventname = eventname2,
-    xplace = 2
-  )
-  kmfunc(
-    qi = qivars[7],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[8],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[9],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[10],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[11],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[12],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = qivars[13],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = compqicatvars[1],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = compqicatvars[2],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-  kmfunc(
-    qi = compqicatvars[3],
-    time = time2,
-    event = event2,
-    eventname = eventname2
-  )
-}
+qivarsuse <- qivarsmeta %>%
+  filter(qivartype %in% c("qi", "compqicat")) %>%
+  pull(qivar)
 
 qinames <- qivarsmeta %>%
-  filter(qivar %in% c(qivars, compqicatvars)) %>%
-  pull(qiname)
+  filter(qivartype %in% c("qi", "compqicat")) %>%
+  mutate(qishortname = sanitize_text(qishortname)) %>%
+  pull(qishortname)
+
+kmfunc2 <- function() {
+  for (i in seq_along(qivarsuse)) {
+    kmfunc(
+      qi = qivarsuse[i],
+      time = time2,
+      event = event2,
+      eventname = eventname2
+    )
+  }
+}
 ```
 
 ```{r death, cache = cacheon, dependson="km", fig.cap = "AC mortality", fig.show='hold', out.width="25%", out.height="25%", fig.subcap=qinames, fig.ncol=4}
