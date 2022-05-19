@@ -121,6 +121,10 @@ All analyses on centre variation include only centres => 10 patients for the res
 
 ## Missing data
 
+If missing height, height was imputed from the last registration within each patient. 
+If still missing, height was imputed using the median height within sex and 5 year age groups. 
+BMI was calculated from the imputed height (but not imputed weight). 
+
 Missing data was imputed with multiple imputation (n = 10) using mice [@mice] 
 for the multivariable logistic and Cox regression models. 
 Variables included in the model are indicated in 

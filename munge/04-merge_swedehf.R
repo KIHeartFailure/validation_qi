@@ -107,8 +107,7 @@ rsdata <- rsdata %>%
     shf_ef = factor(shf_ef, labels = c(">=50", "40-49", "30-39", "<30")),
     shf_weight = coalesce(WEIGHT_24H, WEIGHT, VIKT),
     shf_height = coalesce(HEIGHT, LANGD),
-    shf_bmi = round(shf_weight / (shf_height / 100)^2, 1),
-
+    
     # laboratory
     shf_bpsys = coalesce(BP_SYSTOLIC_24H, BP_SYSTOLIC, BTSYSTOLISKT),
     shf_bpdia = coalesce(BP_DIASTOLIC_24H, BP_DIASTOLIC, BTDIASTOLISKT),
