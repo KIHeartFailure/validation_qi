@@ -8,19 +8,19 @@ qifac <- function(var, type = "f") {
   if (type == "f") {
     var <- factor(var,
       levels = c(0, 1),
-      labels = c("Not fulfilled", "Fulfilled")
+      labels = c("Unattained", "Attained")
     )
   }
   if (type == "ob") {
     var <- factor(var,
       levels = c(0, 1),
-      labels = c("<50% fulfilled", ">=50% fulfilled")
+      labels = c("<50% attained", ">=50% attained")
     )
   }
   if (type == "a") {
     var <- factor(var,
       levels = c(0, 1),
-      labels = c("None fulfilled", "All fulfilled")
+      labels = c("None attained", "All attained")
     )
   }
   return(var)

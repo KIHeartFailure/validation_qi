@@ -11,7 +11,7 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
   levs <- levels(rsdata %>% pull(!!sym(qi)))
 
   # c(bottom, left, top, right)
-  par(mar = c(6.5, 8, 1, 1) + 0.1)
+  par(mar = c(6.5, 8.5, 1, 1) + 0.1)
 
   plots <- plot(fits,
     fun = "event",
@@ -47,9 +47,9 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
 
   nrisk <- summary(fits, seq(0, endtime, 1) * 365, extend = T)
 
-  mtext("No. at risk", side = 1, line = 3.5, at = -670, adj = 0, cex = cexmy, font = 2)
-  mtext(levs[1], side = 1, line = 4.5, at = -670, adj = 0, cex = cexmy)
-  mtext(levs[2], side = 1, line = 5.5, at = -670, adj = 0, cex = cexmy)
+  mtext("No. at risk", side = 1, line = 3.5, at = -740, adj = 0, cex = cexmy, font = 2)
+  mtext(levs[1], side = 1, line = 4.5, at = -740, adj = 0, cex = cexmy)
+  mtext(levs[2], side = 1, line = 5.5, at = -740, adj = 0, cex = cexmy)
 
   axis(1,
     at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=", levs[1])],
