@@ -54,6 +54,12 @@ survfunc <- function(qi, qiname, times, events) {
     ## adjusted
     modvarsuse <- modvars[!modvars %in% str_split(qivarsmeta %>% filter(qivar == qi) %>% pull(noadjvars), ", ")[[1]]]
 
+    modvarsuse <- str_replace(modvarsuse, "shf_location", "strata(shf_location)")
+    kontvars <- c("shf_age", "shf_bpsys", "shf_heartrate", "shf_bmiimp", "shf_gfrckdepi", "shf_ntprobnp")
+    for (j in seq_along(kontvars)) {
+      modvarsuse <- str_replace(modvarsuse, kontvars[j], paste0("ns(", kontvars[j], ", df = 4)"))
+    }
+
     amod <- with(imp, coxph(formula(paste0(
       "Surv(", times[i], ",", events[i], " == 'Yes') ~ ", qi, " + frailty(shf_centre) + ",
       paste(modvarsuse, collapse = " + ")
@@ -77,7 +83,7 @@ survfunc <- function(qi, qiname, times, events) {
 }
 
 qivarsuse <- qivarsmeta %>%
-  filter(qivartype %in% c("qi", "compqicat"))
+  filter(qivartype %in% c("qi", "qisens", "compqicat"))
 
 survfunc2 <- function(times2, events2) {
   for (j in seq_along(qivarsuse$qivar)) {

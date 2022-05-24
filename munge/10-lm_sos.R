@@ -14,9 +14,11 @@ lmtmp <- left_join(
   select(LopNr, shf_indexdtm, EDATUM, ATC)
 
 
-rsdata <- create_medvar(atc = "^(A10BK|A10BD1[5-6]|A10BD19|A10BD2[0-1]|A10BD2[3-5]|A10BX09|A10BX11|A10BX12)", 
-                        medname = "sglt2i", cohortdata = rsdata, meddata = lmtmp, id = "LopNr", metatime = "-5mo-14days", 
-                        valsclass = "fac")
+rsdata <- create_medvar(
+  atc = "^(A10BK|A10BD1[5-6]|A10BD19|A10BD2[0-1]|A10BD2[3-5]|A10BX09|A10BX11|A10BX12)",
+  medname = "sglt2i", cohortdata = rsdata, meddata = lmtmp, id = "LopNr", metatime = "-5mo-14days",
+  valsclass = "fac"
+)
 
 rm(lmtmp)
 rm(lmsel)

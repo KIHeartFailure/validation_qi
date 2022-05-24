@@ -1,6 +1,6 @@
 ```{r km, cache=cacheon}
 
-kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace = 2) {
+kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.05, 2.2), xplace = 2) {
   cexmy <- 1.2
   endtime <- 6
 
@@ -36,9 +36,12 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
 
   ypos <- 1 - summary(fits, 365 * xplace, extend = T)$surv
 
+  levsprint <- levs
+  levsprint[levsprint == ">=50% attained"] <- "\u226550% attained"
+
   ylabs <- bind_cols(
     ypos = ypos,
-    ytext = levs
+    ytext = levsprint
   ) %>%
     arrange(ypos)
 
@@ -47,9 +50,9 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
 
   nrisk <- summary(fits, seq(0, endtime, 1) * 365, extend = T)
 
-  mtext("No. at risk", side = 1, line = 3.5, at = -740, adj = 0, cex = cexmy, font = 2)
-  mtext(levs[1], side = 1, line = 4.5, at = -740, adj = 0, cex = cexmy)
-  mtext(levs[2], side = 1, line = 5.5, at = -740, adj = 0, cex = cexmy)
+  mtext("No. at risk", side = 1, line = 3.5, at = -530, adj = 0, cex = cexmy, font = 2)
+  mtext(levsprint[1], side = 1, line = 4.5, at = -530, adj = 0, cex = cexmy)
+  mtext(levsprint[2], side = 1, line = 5.5, at = -530, adj = 0, cex = cexmy)
 
   axis(1,
     at = seq(0, endtime, 1) * 365, labels = nrisk$n.risk[nrisk$strata == paste0(qi, "=", levs[1])],
@@ -61,12 +64,13 @@ kmfunc <- function(qi, time, event, eventname, yposplus = rep(0.03, 2), xplace =
   )
 }
 
-qivarsuse <- qivarsmeta %>%
-  filter(qivartype %in% c("qi", "compqicat")) %>%
+qiuse <- qivarsmeta %>%
+  filter(qivartype %in% c("qi", "compqicat"))
+
+qivarsuse <- qiuse %>%
   pull(qivar)
 
-qinames <- qivarsmeta %>%
-  filter(qivartype %in% c("qi", "compqicat")) %>%
+qinames <- qiuse %>%
   mutate(qishortname = sanitize_text(qishortname)) %>%
   pull(qishortname)
 

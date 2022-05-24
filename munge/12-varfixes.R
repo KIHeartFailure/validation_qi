@@ -1,10 +1,6 @@
 rsdata <- rsdata %>%
   mutate(
     shf_sex = relevel(factor(shf_sex), ref = "Male"),
-    shf_indexyear_cat = case_when(
-      shf_indexyear >= 2013 & shf_indexyear <= 2013 ~ "2013-2016",
-      shf_indexyear <= 2019 ~ "2017-2019"
-    ),
     shf_age_cat = factor(case_when(
       shf_age < 75 ~ 1,
       shf_age >= 75 ~ 2
@@ -55,26 +51,23 @@ rsdata <- rsdata %>%
         sos_com_diabetes == "Yes" ~ "Yes",
       TRUE ~ "No"
     ),
-    sos_priorhfhosp = factor(case_when(
-      is.na(sos_comdur_hosphf) ~ 4,
-      sos_comdur_hosphf < 365 / 2 | shf_location == "In-patient" ~ 1,
-      sos_comdur_hosphf < 365 ~ 2,
-      sos_comdur_hosphf >= 365 ~ 3,
-    ),
-    levels = 1:4,
-    labels = c("Prior HFH < 6 mo", "Prior HFH 6-12 mo", "Prior HFH > 12 mo", "No prior HFH")
-    ),
 
     # outcome
     sos_out_deathcvhosphf = case_when(
       sos_out_deathcv == "Yes" |
         sos_out_hosphf == "Yes" ~ "Yes",
       TRUE ~ "No"
-    ),
-    sos_out_hosphf_cr = create_crevent(sos_out_hosphf, sos_out_death)
+    )
   )
 
 rsdata <- cut_surv(rsdata, sos_out_deathcvhosphf, sos_outtime_hosphf, floor(365), rename = "1yr", cuttime = FALSE)
 rsdata <- cut_surv(rsdata, sos_out_hosphf, sos_outtime_hosphf, floor(365), rename = "1yr", cuttime = TRUE)
 rsdata <- cut_surv(rsdata, sos_out_deathcv, sos_outtime_death, floor(365), rename = "1yr", cuttime = FALSE)
 rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, floor(365), rename = "1yr", cuttime = TRUE)
+
+
+rsdata <- rsdata %>%
+  mutate_if(is.character, as.factor) %>%
+  mutate(
+    shf_centre = as.character(shf_centre)
+  )

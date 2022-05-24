@@ -1,12 +1,12 @@
 # Impute BMI ---------------------------------------------------------------
 
-# If missing height select the latest height (can also be after index)
+# If missing height select the first height (can also be after index)
 
 heightimpind <- rsdata %>%
   filter(!is.na(shf_height)) %>%
   group_by(LopNr) %>%
   arrange(shf_indexdtm) %>%
-  slice(n()) %>%
+  slice(1) %>%
   ungroup() %>%
   rename(height_imp = shf_height) %>%
   select(LopNr, height_imp)

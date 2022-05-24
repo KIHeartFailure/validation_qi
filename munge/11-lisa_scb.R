@@ -23,7 +23,7 @@ lisa <- lisa %>%
     ),
     Sun2000niva = coalesce(Sun2000niva_old, Sun2000niva_Old),
     scb_education = case_when(
-      Sun2000niva %in% c(1, 2)~ "Compulsory school",
+      Sun2000niva %in% c(1, 2) ~ "Compulsory school",
       Sun2000niva %in% c(3, 4) ~ "Secondary school",
       Sun2000niva %in% c(5, 6, 7) ~ "University"
     ),
@@ -40,10 +40,7 @@ rsdata <- left_join(
 
 ## income
 inc <- rsdata %>%
-  group_by(LopNr, shf_indexyear) %>%
-  slice(1) %>%
-  ungroup() %>%
-  group_by(shf_indexyear) %>%
+  group_by(shf_indexyear, shf_sex) %>%
   summarise(incsum = list(enframe(quantile(scb_dispincome,
     probs = c(0.33, 0.66),
     na.rm = TRUE
@@ -54,7 +51,7 @@ inc <- rsdata %>%
 rsdata <- left_join(
   rsdata,
   inc,
-  by = "shf_indexyear"
+  by = c("shf_indexyear", "shf_sex")
 ) %>%
   mutate(
     scb_dispincome_cat = case_when(

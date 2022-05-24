@@ -1,14 +1,14 @@
 ---
 title: 'Statistical report: Quality indicators for heart failure: a validation study using nationwide registry data – a SwedeHF study'
-subtitle: 'DRAFT'
 author: 'Statistician: Lina Benson'
   
 date: "`r Sys.Date()`"
 output:
   pdf_document:
+    dev: cairo_pdf
     fig_caption: yes
-    fig_height: 7
-    fig_width: 7
+    fig_height: 6
+    fig_width: 9
     number_sections: yes
 link-citations: yes
 bibliography: references.bib
@@ -62,7 +62,7 @@ was however performed separately for this analyses.
 ## Inclusion/exclusion criteria
 
 ```{r flow}
-default_kable(flow, caption = "Flowchart")
+default_kable(flow, caption = "Flowchart", scale_down = F)
 ```
 
 First patient in: `r min(rsdata$shf_indexdtm)` and last patient in: `r max(rsdata$shf_indexdtm)`.  
@@ -96,7 +96,7 @@ default_kable(metalm, caption = "Medications from DDR")
 
 ## Definition of QI variables
 
-```{r codecreateqi, code = readLines("../munge/12-qivars.R"), echo = TRUE, eval = FALSE}
+```{r codecreateqi, code = readLines("../munge/13-qivars.R"), echo = TRUE, eval = FALSE}
 
 ```
 
@@ -106,6 +106,10 @@ Note that the EF QI is removed from the opportunity based scores.
 
 For the CRT and ICD QI a sensitivity analysis was performed including patients with EF <40% instead of <30% and 
 not applying the ECG (for CRT) and NYHA class criteria. 
+
+For blood test documented transferrin and ferritin were not recorded in SwedeHF 
+prior to April 2017 and therefore only required after this for attainment. A sensitivity analyses 
+was therefore conducted without requiring transferrin and ferritin for the whole time period. 
 
 # Statistical analysis 
 
@@ -117,11 +121,11 @@ comparisons were made and therefore the results should be viewed with some care.
 
 ## Centre
 
-All analyses on centre variation include only centres => 10 patients for the respective analyses. 
+All analyses on centre variation include only centres $\ge$ 10 patients for the respective analyses. 
 
 ## Missing data
 
-If missing height, height was imputed from the last registration within each patient. 
+If missing height, height was imputed from the first following registration with non-missing height within each patient. 
 If still missing, height was imputed using the median height within sex and 5 year age groups. 
 BMI was calculated from the imputed height (but not imputed weight). 
 
@@ -145,9 +149,15 @@ The QI were not imputed and based on non-imputed raw data.
 
 \clearpage
 
+```{r, child = "../src/boxplot.Rmd"}
+
+```
+
+\clearpage
+
 The likelihood of attainment is assessed using a logistic regression, crude and adjusted for the variables indicated in 
-Table \ref{tab:tab1}. (the generalized linear mixed-effects model
-(GLMM) with a logit link and a random effect for centre just took too long for this amount of models, observations, variables and imputations)
+Table \ref{tab:tab1}. Continuous variables (except index year) were modelled using
+natural cubic splines with 4 degrees of freedom. 
 
 ```{r, child = "../src/logreg.Rmd"}
 
@@ -156,10 +166,6 @@ Table \ref{tab:tab1}. (the generalized linear mixed-effects model
 \clearpage
 
 ```{r, child = "../src/corr.Rmd"}
-
-```
-
-```{r, child = "../src/boxplot.Rmd"}
 
 ```
 
@@ -180,6 +186,10 @@ The outcomes were presented with Kaplan-Meier plots. Cox proportional hazards re
 frailty term for centre were used to model the time to first event. Variables included in the model are indicated in 
 Table \ref{tab:tab1}. Adjustment is not performed for variables that are included in the calculation of the QI 
 (i.e, for qi ef, ef is not adjusted for, for qi lab, anemia and eGFR is not adjusted for...). 
+Continuous variables (except index year) were modelled using
+natural cubic splines with 4 degrees of freedom and location was included as a strata variable in the model due to non-proportional hazards. 
+Some signs of non-proportional hazards were also detected for a few of the QI variables (RASI/ARNI and ICD) 
+so the interpretation of the HR for these should be an "averaged effect" over the timespan. 
 
 The median (min-max) follow-up is 
 `r rsdata %>% summarise(med = fn(median(sos_outtime_death / 365.25 * 12), dig = 1),
@@ -192,10 +202,8 @@ The median (min-max) follow-up is
 
 ### Assumptions
 
-TO DO: The proportional hazards assumption was investigated using the scaled Schoenfeld 
+The proportional hazards assumption was investigated using the scaled Schoenfeld 
 residuals (cox.zph in [@survival-package]) for the primary outcome. 
-Possible outliers were visually inspected by plotting the dfbetas. 
-=> XXXX. Also check liniearity ect. 
 
 ```{r, child = "../src/outtab.Rmd"}
 

@@ -65,7 +65,8 @@ rsdata <- create_deathvar(
   orsakvar = sos_deathcause,
   orsakkod = "I|J81|K761|R57|G45",
   valsclass = "fac",
-  warnings = FALSE
+  warnings = FALSE, 
+  meta_pos = "ULORSAK"
 )
 
 rm(dors)

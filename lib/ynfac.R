@@ -17,11 +17,5 @@ qifac <- function(var, type = "f") {
       labels = c("<50% attained", ">=50% attained")
     )
   }
-  if (type == "a") {
-    var <- factor(var,
-      levels = c(0, 1),
-      labels = c("None attained", "All attained")
-    )
-  }
   return(var)
 }

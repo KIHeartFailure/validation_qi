@@ -113,7 +113,8 @@ tab1 <- tab1 %>%
     ),
     footnote2 = if_else(str_detect(var, "sos_"), footnote_marker_symbol(2), ""),
     footnote3 = if_else(str_detect(var, "scb_"), footnote_marker_symbol(3), ""),
-    footnote4 = if_else(var %in% modvars, footnote_marker_symbol(4), "")
+    footnote4 = if_else(var %in% modvars, footnote_marker_symbol(4), ""),
+    footnote5 = if_else(str_detect(var, "scb_dispincome"), footnote_marker_symbol(5), "")
   ) %>%
   unite(footnote, starts_with("footnote"), sep = "") %>%
   mutate(
@@ -140,9 +141,10 @@ footnote(
   ),
   symbol = c(
     "Source: SwedeHF",
-    "Source: NPR",
+    "Source: SoS",
     "Source: SCB",
-    "Included in imputation model and adjusted for in cox and logistic regression models."
+    "Included in imputation model and adjusted for in cox and logistic regression models.",
+    "According to tertiles within indexyear and sex"
   )
 )
 ```
@@ -218,7 +220,8 @@ tab1 <- tab1 %>%
     ),
     footnote2 = if_else(str_detect(var, "sos_"), footnote_marker_symbol(2), ""),
     footnote3 = if_else(str_detect(var, "scb_"), footnote_marker_symbol(3), ""),
-    footnote4 = if_else(var %in% modvars, footnote_marker_symbol(4), "")
+    footnote4 = if_else(var %in% modvars, footnote_marker_symbol(4), ""),
+    footnote5 = if_else(str_detect(var, "scb_dispincome"), footnote_marker_symbol(5), "")
   ) %>%
   unite(footnote, starts_with("footnote"), sep = "") %>%
   mutate(
@@ -249,9 +252,10 @@ footnote(
   ),
   symbol = c(
     "Source: SwedeHF",
-    "Source: NPR",
+    "Source: SoS",
     "Source: SCB",
-    "Included in imputation model and adjusted for in cox and logistic regression models."
+    "Included in imputation model and adjusted for in cox and logistic regression models.",
+    "According to tertiles within indexyear and sex"
   )
 )
 ```

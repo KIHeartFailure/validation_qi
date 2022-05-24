@@ -35,7 +35,7 @@ flow <- rbind(flow, c("Exclude posts < 18 years", nrow(rsdata)))
 rsdata <- rsdata %>%
   filter((shf_indexdtm < sos_deathdtm | is.na(sos_deathdtm))) # enddate prior to indexdate
 
-flow <- rbind(flow, c("Exclude posts with end of follow-up <= date (died in hospital)", nrow(rsdata)))
+flow <- rbind(flow, c("Exclude posts died in hospital", nrow(rsdata)))
 
 rsdata <- rsdata %>%
   filter(shf_centretype != "Primary care")

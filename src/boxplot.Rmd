@@ -17,7 +17,7 @@ for (i in seq_along(qivarsuse)) {
     ) %>%
     ungroup() %>%
     filter(!!sym(qivarsuse[i]) == lev[2]) %>%
-    filter(tot > 10) %>%
+    filter(tot >= 10) %>%
     select(shf_centre, percent) %>%
     mutate(
       qivar = qivarsuse[i],
@@ -33,6 +33,8 @@ for (i in seq_along(qivarsuse)) {
 }
 
 qidata <- left_join(qidata, qivarsmeta %>% select(-noadjvars), by = "qivar")
+qidata <- qidata %>%
+  mutate(qishortname = if_else(qishortname == "OB: LVEF >=40%", "OB: LVEF \u226540%", qishortname))
 
 qidata$qiname <- forcats::fct_reorder(qidata$qishortname, qidata$qinum)
 

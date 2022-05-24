@@ -103,7 +103,7 @@ tmp <- lapply(qivarsmeta %>% pull(qivar), addnmissapp)
 tabqi <- tabqi %>%
   mutate(
     var = str_remove(var, " = "),
-    var = str_remove(var, "Yes|Fulfilled|>=50% fulfilled|All fulfilled")
+    var = str_remove(var, "Attained|>=50% attained")
   )
 
 tabqi <- left_join(tabqi %>% filter(var != "n"),

@@ -23,8 +23,8 @@ yncomb <- function(oldvar, newvar) {
 }
 
 rsdata <- rsdata %>%
-  mutate( # change to transmute when finished checking
-    # transmute(
+  # mutate( # change to transmute when finished checking
+  transmute(
     LopNr = LopNr,
     shf_source = case_when(
       source == 3 & migrated == 1 ~ 2,
@@ -58,8 +58,7 @@ rsdata <- rsdata %>%
       VARDGIVARE %in% c(2, 3) | LOCATION == "IX_OV" | TYPE %in% c("FOLLOWUP", "YEARLY_FOLLOWUP") ~ "Out-patient",
       VARDGIVARE == 1 | LOCATION == "IX_SV" ~ "In-patient"
     ),
-    shf_centre = coalesce(CENTRENAME, sjhnewrs), 
-    shf_centreregion = coalesce(LANDSTING, regionnewrs), 
+    shf_centre = coalesce(CENTRENAME, sjhnewrs),
     shf_centretype = case_when(
       TYPEID == 1 | ORG_UNIT_LEVEL_NAME %in% c("Avdelning", "Fristaende hjartmottagning", "Mottagning") ~ "Hospital",
       TYPEID == 2 | ORG_UNIT_LEVEL_NAME %in% c("Vardcentral") ~ "Primary care"
@@ -107,7 +106,7 @@ rsdata <- rsdata %>%
     shf_ef = factor(shf_ef, labels = c(">=50", "40-49", "30-39", "<30")),
     shf_weight = coalesce(WEIGHT_24H, WEIGHT, VIKT),
     shf_height = coalesce(HEIGHT, LANGD),
-    
+
     # laboratory
     shf_bpsys = coalesce(BP_SYSTOLIC_24H, BP_SYSTOLIC, BTSYSTOLISKT),
     shf_bpdia = coalesce(BP_DIASTOLIC_24H, BP_DIASTOLIC, BTDIASTOLISKT),
@@ -359,32 +358,14 @@ rsdata <- rsdata %>%
       UPPF_VARDNIVA == 2 | FOLLOWUP_HC_LEVEL == "PRIMARY_CARE" ~ 2,
       UPPF_VARDNIVA == 3 | FOLLOWUP_HC_LEVEL == "OTHER" ~ 3
     ),
-    shf_followuplocation = factor(shf_followuplocation, labels = c("Hospital", "Primary care", "Other")), 
-    shf_qol = coalesce(LIFEQUALITY_SCORE, LIVSKVALITET)
+    shf_followuplocation = factor(shf_followuplocation, labels = c("Hospital", "Primary care", "Other")),
+    shf_qol = coalesce(LIFEQUALITY_SCORE, LIVSKVALITET),
+    PARTICIPATION_HF_SCHOOL = PARTICIPATION_HF_SCHOOL,
+    PARTICIPATION_HF_TRAINING = PARTICIPATION_HF_TRAINING,
+    FOLLOWUP_UNIT = FOLLOWUP_UNIT
   ) %>%
   select(-starts_with("tmp_"))
 
 
-# Create variable EF at index ---------------------------------------------
-
-rsdataindex <- rsdata %>%
-  filter(
-    shf_type == "Index",
-    !is.na(shf_ef)
-  ) %>%
-  group_by(LopNr) %>%
-  slice(1) %>%
-  ungroup() %>%
-  transmute(
-    LopNr = LopNr,
-    shf_eforg = shf_ef
-  )
-
-rsdata <- left_join(rsdata,
-  rsdataindex,
-  by = "LopNr"
-)
-
 rm(oldrs)
 rm(newrs)
-rm(rsdataindex)

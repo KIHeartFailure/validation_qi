@@ -66,6 +66,11 @@ orfunc <- function(xvar, xvarname) {
         )
 
         modvarsuse <- modvars[!modvars %in% str_split(qivarsmeta %>% filter(qivar == qivarsuse[i]) %>% pull(noadjvars), ", ")[[1]]]
+        kontvars <- c("shf_age", "shf_bpsys", "shf_heartrate", "shf_bmiimp", "shf_gfrckdepi", "shf_ntprobnp")
+        for (j in seq_along(kontvars)) {
+          modvarsuse <- str_replace(modvarsuse, kontvars[j], paste0("ns(", kontvars[j], ", df = 4)"))
+        }
+
         modadj <- with(imp, glm(formula(paste0(
           qivarsuse[i], " == '", lev[2], "' ~ ",
           xvar, " + ", paste(modvarsuse, collapse = " + ")
@@ -122,10 +127,13 @@ orfunc <- function(xvar, xvarname) {
 
   colnames(outtab) <- sanitize_text(colnames(outtab))
 
-  default_kable(outtab,
+  ref <- levels(rsdata %>% pull(!!sym(xvar)))[1]
+  footnote(default_kable(outtab,
     font_size = 6,
     caption = sanitize_text(paste0("Likelihood of attainment by ", xvarname)),
     escape = FALSE
+  ),
+  general = paste0("Reference in the logistic regression model is ", ref)
   )
 }
 ```

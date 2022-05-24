@@ -8,14 +8,12 @@ tabvars <- c(
   "shf_age",
   "shf_age_cat",
   "shf_indexyear",
-  "shf_indexyear_cat",
-  
+
   # socec
   "scb_education",
   "scb_child",
   "scb_famtype",
   "scb_dispincome_cat",
-  
   "shf_durationhf",
   "shf_location",
 
@@ -38,9 +36,9 @@ tabvars <- c(
   "shf_bnp",
   "shf_transferrin",
   "shf_ferritin",
-  "shf_qrs", "shf_lbbb", 
-  "shf_ekg", 
-  
+  "shf_qrs", "shf_lbbb",
+  "shf_ekg",
+
   # comorbs
   "shf_smoking_cat",
   "shf_sos_com_diabetes",
@@ -71,12 +69,11 @@ tabvars <- c(
   "shf_asaantiplatelet",
   "shf_anticoagulantia",
   "shf_statin",
-  "shf_nitrate", 
+  "shf_nitrate",
   "sos_ddr_sglt2i",
-
-  "shf_qol", 
-  "PARTICIPATION_HF_SCHOOL", 
-  "PARTICIPATION_HF_TRAINING", 
+  "shf_qol",
+  "PARTICIPATION_HF_SCHOOL",
+  "PARTICIPATION_HF_TRAINING",
   "FOLLOWUP_UNIT"
 )
 
@@ -84,19 +81,18 @@ tabvars <- c(
 tabvars_not_in_mod <- c(
   "shf_sos_com_ihd",
   "shf_age_cat",
-  "shf_indexyear_cat", 
   "shf_map",
   "shf_bpdia",
   "shf_hb",
-  "shf_creatinine", 
-  "shf_efproc", 
+  "shf_creatinine",
+  "shf_efproc",
   "shf_ef_cat",
   "shf_bnp",
   "shf_transferrin",
   "shf_ferritin",
-  "shf_potassium", "shf_sodium", 
-  "shf_qrs", "shf_lbbb", 
-  "shf_qol", 
+  "shf_potassium", "shf_sodium",
+  "shf_qrs", "shf_lbbb",
+  "shf_qol",
   "shf_acei", "shf_arb", "shf_arni",
   "shf_rasarni",
   "shf_bbl",
@@ -108,12 +104,11 @@ tabvars_not_in_mod <- c(
   "shf_asaantiplatelet",
   "shf_anticoagulantia",
   "shf_statin",
-  "shf_nitrate", 
+  "shf_nitrate",
   "sos_ddr_sglt2i",
-  "sos_priorhfhosp", 
-  "shf_ekg", 
-  "PARTICIPATION_HF_SCHOOL", 
-  "PARTICIPATION_HF_TRAINING", 
+  "shf_ekg",
+  "PARTICIPATION_HF_SCHOOL",
+  "PARTICIPATION_HF_TRAINING",
   "FOLLOWUP_UNIT"
 )
 
