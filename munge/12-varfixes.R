@@ -51,6 +51,14 @@ rsdata <- rsdata %>%
         sos_com_diabetes == "Yes" ~ "Yes",
       TRUE ~ "No"
     ),
+    shf_qrsexclpaced = factor(case_when(
+      shf_ekg == "PM/Other" | is.na(shf_qrs) ~ NA_real_,
+      shf_qrs < 150 ~ 1,
+      shf_qrs >= 150 ~ 2
+    ),
+    levels = 1:2,
+    labels = c("<150", "=>150")
+    ),
 
     # outcome
     sos_out_deathcvhosphf = case_when(

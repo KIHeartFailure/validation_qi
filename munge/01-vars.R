@@ -36,7 +36,8 @@ tabvars <- c(
   "shf_bnp",
   "shf_transferrin",
   "shf_ferritin",
-  "shf_qrs", "shf_lbbb",
+  "shf_qrs", "shf_qrsexclpaced", 
+  "shf_lbbb",
   "shf_ekg",
 
   # comorbs
@@ -91,7 +92,8 @@ tabvars_not_in_mod <- c(
   "shf_transferrin",
   "shf_ferritin",
   "shf_potassium", "shf_sodium",
-  "shf_qrs", "shf_lbbb",
+  "shf_qrs", "shf_qrsexclpaced", 
+  "shf_lbbb",
   "shf_qol",
   "shf_acei", "shf_arb", "shf_arni",
   "shf_rasarni",
