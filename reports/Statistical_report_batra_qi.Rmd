@@ -199,6 +199,43 @@ The median (min-max) follow-up is
                                    pull(out)` months for a total of 
                                    `r rsdata %>% summarise(sumpy = fn(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
                                    pull(sumpy)` patient-years of follow-up.
+                                   
+The incidence (no events, sum py, incidence rate/1000py (95% CI)) for all-cause mortality is
+`r ev <- rsdata %>%
+      summarise(ev = sum(sos_out_death == "Yes"))
+
+    s <- rsdata %>%
+      summarise(
+        s = sum(sos_outtime_death) / 365.25)
+
+    r <- pois.exact(x = ev$ev, pt = s$s / 1000)
+
+    paste0(
+      ev$ev, ", ",
+      fn(s$s, dig = 0), ", ",
+      fn(r$rate, dig = 0), " (",
+      fn(r$lower, dig = 0), "-",
+      fn(r$upper, dig = 0), ")"
+    )
+` 
+and for CV mortality
+`r ev <- rsdata %>%
+      summarise(ev = sum(sos_out_deathcv == "Yes"))
+
+    s <- rsdata %>%
+      summarise(
+        s = sum(sos_outtime_death) / 365.25)
+
+    r <- pois.exact(x = ev$ev, pt = s$s / 1000)
+
+    paste0(
+      ev$ev, ", ",
+      fn(s$s, dig = 0), ", ",
+      fn(r$rate, dig = 0), " (",
+      fn(r$lower, dig = 0), "-",
+      fn(r$upper, dig = 0), ")"
+    )
+`
 
 ### Assumptions
 
