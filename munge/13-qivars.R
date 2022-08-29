@@ -41,8 +41,18 @@ rsdata <- rsdata %>%
       shf_rasarni == "Yes" ~ 1,
       TRUE ~ 0
     ),
+    sens_qi3_2rasarni = case_when(
+      is.na(shf_rasarni) | avqi_ef40 == 0 | shf_gfrckdepi < 30 | is.na(shf_gfrckdepi) ~ NA_real_,
+      shf_rasarni == "Yes" ~ 1,
+      TRUE ~ 0
+    ),
     qi3_3mra = case_when(
       is.na(shf_mra) | avqi_ef40 == 0 ~ NA_real_,
+      shf_mra == "Yes" ~ 1,
+      TRUE ~ 0
+    ),
+    sens_qi3_3mra = case_when(
+      is.na(shf_mra) | avqi_ef40 == 0 | shf_gfrckdepi < 30 | is.na(shf_gfrckdepi) ~ NA_real_,
       shf_mra == "Yes" ~ 1,
       TRUE ~ 0
     ),
@@ -172,7 +182,9 @@ qivarsmeta <- qivarsmeta %>%
       qivar == "qi2_6follow" ~ "Follow-up review",
       qivar == "qi3_1bbl" ~ "Beta-blocker",
       qivar == "qi3_2rasarni" ~ "ACEi/ARB/ARNI",
+      qivar == "sens_qi3_2rasarni" ~ "ACEi/ARB/ARNI (sensitivity)",
       qivar == "qi3_3mra" ~ "MRA",
+      qivar == "sens_qi3_3mra" ~ "MRA (sensitivity)",
       qivar == "qi3_4loop" ~ "Loop diuretics",
       qivar == "qi4_5crt" ~ "CRT",
       qivar == "sens_qi4_5crt" ~ "CRT (sensitivity)",
@@ -196,7 +208,9 @@ qivarsmeta <- qivarsmeta %>%
       qivar == "qi2_6follow" ~ "Secondary (2.1): Follow-up review",
       qivar == "qi3_1bbl" ~ "Main (3.1): Beta-blocker",
       qivar == "qi3_2rasarni" ~ "Main (3.2): ACE inhibitor, ARB or ARNI",
+      qivar == "sens_qi3_2rasarni" ~ "Main (3.2): ACE inhibitor, ARB or ARNI (sensitivity)",
       qivar == "qi3_3mra" ~ "Main (3.3): MRA",
+      qivar == "sens_qi3_3mra" ~ "Main (3.3): MRA (sensitivity)",
       qivar == "qi3_4loop" ~ "Main (3.5): Loop diuretic therapy",
       qivar == "qi4_5crt" ~ "Secondary (4.1): CRT",
       qivar == "sens_qi4_5crt" ~ "Secondary (4.1): CRT (sensitivity)",
@@ -216,7 +230,7 @@ qivarsmeta <- qivarsmeta %>%
       qivar %in% c("qi2_4lab", "sens_qi2_4lab") ~ "shf_anemia, shf_gfrckdepi",
       qivar == "qi2_5rehab" ~ "shf_location",
       qivar == "qi2_6follow" ~ "shf_location",
-      qivar %in% c("qi3_1bbl", "qi3_2rasarni", "qi3_3mra", "qi3_4loop", "comp_qi_all") ~ "shf_ef",
+      qivar %in% c("qi3_1bbl", "qi3_2rasarni", "sens_qi3_2rasarni", "qi3_3mra", "sens_qi3_3mra", "qi3_4loop", "comp_qi_all") ~ "shf_ef",
       qivar %in% c("qi4_5crt", "sens_qi4_5crt") ~ "shf_ef, shf_durationhf",
       qivar %in% c("qi4_6icd", "sens_qi4_6icd") ~ "shf_ef, shf_durationhf",
       qivar %in% c("comp_qi_opbased1", "comp_qi_opbased1_cat") ~
@@ -228,7 +242,7 @@ qivarsmeta <- qivarsmeta %>%
     qivartype = case_when(
       qivar %in% c("comp_qi_opbased1_cat", "comp_qi_opbased2_cat", "comp_qi_all") ~ "compqicat",
       qivar %in% c("comp_qi_opbased1", "comp_qi_opbased2") ~ "compqicont",
-      qivar %in% c("sens_qi2_4lab", "sens_qi4_5crt", "sens_qi4_6icd") ~ "qisens",
+      qivar %in% c("sens_qi2_4lab", "sens_qi3_2rasarni", "sens_qi3_3mra", "sens_qi4_5crt", "sens_qi4_6icd") ~ "qisens",
       TRUE ~ "qi"
     )
   )

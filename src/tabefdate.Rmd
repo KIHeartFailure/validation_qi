@@ -1,0 +1,32 @@
+```{r tabefdate, cache=cacheon}
+
+efdata <- rsdata %>%
+  filter(!is.na(shf_ef)) %>%
+  mutate(diffefdate = as.numeric(shf_indexdtm - shf_ef_date))
+
+tabef <- print(CreateTableOne(
+  vars = "diffefdate",
+  data = efdata
+),
+smd = FALSE,
+missing = TRUE,
+printToggle = FALSE,
+nonnormal = "diffefdate",
+catDigits = 1,
+contDigits = 1,
+noSpaces = TRUE,
+explain = FALSE,
+showAllLevels = TRUE
+)
+tabef <- as_tibble(cbind(var = rownames(tabef), tabef)) %>%
+  select(Missing, Overall)
+
+## fix in order to use escape = TRUE
+colnames(tabef) <- sanitize_text(c("Missing (%) of those with EF", "Median [q1-q3]"))
+
+default_kable(tabef,
+  font_size = 4,
+  caption = "Time (days) between LVEF measure and index",
+  escape = FALSE
+)
+```

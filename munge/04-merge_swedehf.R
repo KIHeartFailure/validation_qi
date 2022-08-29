@@ -104,6 +104,9 @@ rsdata <- rsdata %>%
       d_lvefprocent == 4 | LVEF_SEMIQUANTITATIVE == "SEVERE" | LVEF_PERCENT < 30 ~ 4
     ),
     shf_ef = factor(shf_ef, labels = c(">=50", "40-49", "30-39", "<30")),
+    
+    shf_ef_date = coalesce(LVEF_DATE, LVEFDATE),
+      
     shf_weight = coalesce(WEIGHT_24H, WEIGHT, VIKT),
     shf_height = coalesce(HEIGHT, LANGD),
 

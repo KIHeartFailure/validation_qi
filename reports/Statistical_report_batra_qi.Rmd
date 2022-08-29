@@ -111,6 +111,8 @@ For blood test documented transferrin and ferritin were not recorded in SwedeHF
 prior to April 2017 and therefore only required after this for attainment. A sensitivity analyses 
 was therefore conducted without requiring transferrin and ferritin for the whole time period. 
 
+For ACEI/ARB/ARNi and MRA e sensitivy analyses was performed excluding patients with eGFR < 30 or missing eGFR. 
+
 # Statistical analysis 
 
 ## General
@@ -138,6 +140,10 @@ The QI were not imputed and based on non-imputed raw data.
 ## Baseline characteristics
 
 ```{r, child = "../src/tab1.Rmd"}
+
+```
+
+```{r, child = "../src/tabefdate.Rmd"}
 
 ```
 
