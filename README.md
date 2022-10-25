@@ -1,4 +1,4 @@
-# R code for the project Quality indicators for heart failure: a validation study using nationwide registry data in SwedeHF study
+# R code for the project Association between heart failure quality of care and mortality: population-based cohort study using nationwide registries
 
 The aim of this R code is to be transparent and document the data handling 
 and statistical analyses performed for the project.
@@ -31,4 +31,4 @@ reports/Statistical_report_XX.Rmd
 
 ## Publication
 
-... 
+DOI: 10.1002/ejhf.2725
